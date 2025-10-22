@@ -1,0 +1,26 @@
+# WiFi credentials (contains sensitive information)
+src/secrets.h
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# Build artifacts (if using PlatformIO)
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Arduino build files (if any)
+*.bin
+*.elf
+*.hex
