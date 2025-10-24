@@ -132,9 +132,7 @@ void DisplayManager::renderElapsedView(TimerManager* timerManager) {
 
   // Line 4: Current time or status
   display.setCursor(0, 48);
-  display.print("[");
   display.print(getCurrentTimeString());
-  display.print("]");
 
   display.display();
 }
@@ -161,9 +159,7 @@ void DisplayManager::renderTimestampView(TimerManager* timerManager) {
 
   // Line 4: Current time
   display.setCursor(0, 48);
-  display.print("[");
   display.print(getCurrentTimeString());
-  display.print("]");
 
   display.display();
 }
