@@ -98,54 +98,134 @@ bool WiFiManager::checkTimeSync() {
   return now > 1000000000;
 }
 
-bool WiFiManager::sendIFTTTNotification(const char* webhookKey, const char* eventName, const char* value1) {
+bool WiFiManager::sendTelegramNotification(const char* botToken, const char* chatID, const char* message) {
   // Check if we're connected to WiFi
   if (!isConnected()) {
-    DEBUG_PRINTLN("WiFiManager: Cannot send IFTTT notification - not connected to WiFi");
+    DEBUG_PRINTLN("WiFiManager: Cannot send Telegram notification - not connected to WiFi");
     return false;
   }
 
-  // Check if webhook key is configured
-  if (webhookKey == nullptr || strlen(webhookKey) == 0) {
-    DEBUG_PRINTLN("WiFiManager: IFTTT webhook key not configured");
+  // Check if bot token and chat ID are configured
+  if (botToken == nullptr || strlen(botToken) == 0 || chatID == nullptr || strlen(chatID) == 0) {
+    DEBUG_PRINTLN("WiFiManager: Telegram bot token or chat ID not configured");
     return false;
   }
 
-  WiFiClient client;
+  WiFiClientSecure client;
+  client.setInsecure();  // Skip certificate validation (necessary for ESP8266)
+
   HTTPClient http;
 
-  // Build IFTTT webhook URL
-  String url = "http://maker.ifttt.com/trigger/";
-  url += eventName;
-  url += "/with/key/";
-  url += webhookKey;
+  // Build Telegram API URL
+  String url = "https://api.telegram.org/bot";
+  url += botToken;
+  url += "/sendMessage?chat_id=";
+  url += chatID;
+  url += "&text=";
+  url += urlencode(message);
 
-  DEBUG_PRINT("WiFiManager: Sending IFTTT notification to: ");
-  DEBUG_PRINTLN(eventName);
+  DEBUG_PRINTLN("WiFiManager: Sending Telegram notification...");
+
+  // Begin HTTP connection
+  http.begin(client, url);
+
+  // Send GET request
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0) {
+    DEBUG_PRINT("WiFiManager: Telegram notification sent successfully (HTTP ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+    http.end();
+    return true;
+  } else {
+    DEBUG_PRINT("WiFiManager: Telegram notification failed (Error: ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+    http.end();
+    return false;
+  }
+}
+
+bool WiFiManager::sendNotifyMeNotification(const char* accessCode, const char* message) {
+  // Check if we're connected to WiFi
+  if (!isConnected()) {
+    DEBUG_PRINTLN("WiFiManager: Cannot send Notify Me notification - not connected to WiFi");
+    return false;
+  }
+
+  // Check if access code is configured
+  if (accessCode == nullptr || strlen(accessCode) == 0) {
+    DEBUG_PRINTLN("WiFiManager: Notify Me access code not configured");
+    return false;
+  }
+
+  WiFiClientSecure client;
+  client.setInsecure();  // Skip certificate validation
+
+  HTTPClient http;
+
+  // Notify Me API endpoint
+  String url = "https://api.notifymyecho.com/v1/NotifyMe";
+
+  DEBUG_PRINTLN("WiFiManager: Sending Notify Me (Alexa) notification...");
 
   // Begin HTTP connection
   http.begin(client, url);
   http.addHeader("Content-Type", "application/json");
 
   // Build JSON payload
-  String payload = "{\"value1\":\"";
-  payload += value1;
+  String payload = "{\"notification\":\"";
+  payload += message;
+  payload += "\",\"accessCode\":\"";
+  payload += accessCode;
   payload += "\"}";
 
   // Send POST request
   int httpResponseCode = http.POST(payload);
 
   if (httpResponseCode > 0) {
-    DEBUG_PRINT("WiFiManager: IFTTT notification sent successfully (HTTP ");
+    DEBUG_PRINT("WiFiManager: Notify Me notification sent successfully (HTTP ");
     DEBUG_PRINT(httpResponseCode);
     DEBUG_PRINTLN(")");
     http.end();
     return true;
   } else {
-    DEBUG_PRINT("WiFiManager: IFTTT notification failed (Error: ");
+    DEBUG_PRINT("WiFiManager: Notify Me notification failed (Error: ");
     DEBUG_PRINT(httpResponseCode);
     DEBUG_PRINTLN(")");
     http.end();
     return false;
   }
+}
+
+// URL encode helper function
+String WiFiManager::urlencode(const char* str) {
+  String encoded = "";
+  char c;
+  char code0;
+  char code1;
+
+  for (int i = 0; i < strlen(str); i++) {
+    c = str[i];
+    if (c == ' ') {
+      encoded += '+';
+    } else if (isalnum(c)) {
+      encoded += c;
+    } else {
+      code1 = (c & 0xf) + '0';
+      if ((c & 0xf) > 9) {
+        code1 = (c & 0xf) - 10 + 'A';
+      }
+      c = (c >> 4) & 0xf;
+      code0 = c + '0';
+      if (c > 9) {
+        code0 = c - 10 + 'A';
+      }
+      encoded += '%';
+      encoded += code0;
+      encoded += code1;
+    }
+  }
+  return encoded;
 }

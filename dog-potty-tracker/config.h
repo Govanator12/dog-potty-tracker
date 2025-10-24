@@ -50,8 +50,8 @@
 #define WIFI_CONNECT_TIMEOUT 10000  // milliseconds (10 seconds)
 #define WIFI_RECONNECT_MAX_BACKOFF 60000  // 1 minute cap
 
-// IFTTT Notifications Configuration
-#define IFTTT_NOTIFICATION_COOLDOWN 3600000  // 1 hour in milliseconds (prevent spam)
+// Telegram Notifications Configuration
+#define TELEGRAM_NOTIFICATION_COOLDOWN 3600000  // 1 hour in milliseconds (prevent spam)
 #define NOTIFICATION_QUIET_START_HOUR 23     // 11 PM - don't send notifications
 #define NOTIFICATION_QUIET_END_HOUR 7        // 7 AM - resume notifications
 

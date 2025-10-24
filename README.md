@@ -87,72 +87,126 @@ Open Tools -> Manage Libraries and install:
    ```
 3. Save the file (this file is ignored by git for security)
 
-### 5. Configure IFTTT Notifications (Optional)
+### 5. Configure Telegram Notifications (Optional - Free!)
 
-To receive push notifications and Alexa announcements when the red LED turns on (dog needs to pee):
+Telegram is completely free and provides instant push notifications to your phone.
 
-#### Step 1: Create IFTTT Account
-1. Go to [ifttt.com](https://ifttt.com) and create a free account
-2. Download the IFTTT mobile app (iOS/Android)
+#### Step 1: Create Your Telegram Bot
+1. Open Telegram app on your phone
+2. Search for "@BotFather" and start a chat
+3. Send `/newbot` command
+4. Follow the prompts to name your bot (e.g., "Dog Potty Tracker")
+5. BotFather will give you a **Bot Token** - save this! (looks like `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
-#### Step 2: Get Your Webhook Key
-1. Go to [https://ifttt.com/maker_webhooks/settings](https://ifttt.com/maker_webhooks/settings)
-2. Copy your webhook key (looks like: `a1b2c3d4e5f6g7h8i9j0`)
+#### Step 2: Get Your Chat ID
+1. Start a chat with your new bot (click the link BotFather provides)
+2. Send `/start` to your bot
+3. Visit this URL in your browser (replace `<YourBotToken>` with your actual token):
+   ```
+   https://api.telegram.org/bot<YourBotToken>/getUpdates
+   ```
+4. Look for `"chat":{"id":123456789}` in the response
+5. Save your **Chat ID** (the number after `"id":`)
 
-#### Step 3: Create Applet for Push Notifications
-1. Go to [https://ifttt.com/create](https://ifttt.com/create)
-2. Click "If This"
-   - Choose "Webhooks"
-   - Choose "Receive a web request"
-   - Event name: `dog_pee_alert`
-   - Click "Create trigger"
-3. Click "Then That"
-   - Choose "Notifications"
-   - Choose "Send a notification from the IFTTT app"
-   - Message: `{{Value1}}` (this will show the time since last pee)
-   - Click "Create action"
-4. Click "Continue" and "Finish"
-
-#### Step 4: Create Applet for Alexa Announcement
-1. Create another applet at [https://ifttt.com/create](https://ifttt.com/create)
-2. Click "If This"
-   - Choose "Webhooks"
-   - Choose "Receive a web request"
-   - Event name: `dog_pee_alert` (same as before)
-   - Click "Create trigger"
-3. Click "Then That"
-   - Choose "Amazon Alexa"
-   - Choose "Make an announcement"
-   - Message: `Your dog needs to pee! {{Value1}}`
-   - Click "Create action"
-4. Click "Continue" and "Finish"
-
-#### Step 5: Add Webhook Keys to secrets.h
-1. Edit `dog-potty-tracker/secrets.h`
-2. Add your webhook keys (supports up to 3 people):
+#### Step 3: Add Bot Details to secrets.h
+1. Copy `dog-potty-tracker/secrets.h.example` to `dog-potty-tracker/secrets.h` (if not already done)
+2. Edit `dog-potty-tracker/secrets.h` and add your bot token and chat ID:
    ```cpp
-   const char* IFTTT_WEBHOOK_KEY_1 = "your_webhook_key_here";
-   const char* IFTTT_WEBHOOK_KEY_2 = "girlfriend_webhook_key_here";
-   const char* IFTTT_WEBHOOK_KEY_3 = "";  // Optional third person
-   const char* IFTTT_EVENT_NAME = "dog_pee_alert";
+   // Person 1 (You)
+   const char* TELEGRAM_BOT_TOKEN_1 = "123456789:ABCdefGHIjklMNOpqrsTUVwxyz";
+   const char* TELEGRAM_CHAT_ID_1 = "123456789";
+
+   // Person 2 (Girlfriend) - optional
+   const char* TELEGRAM_BOT_TOKEN_2 = "";  // Her bot token
+   const char* TELEGRAM_CHAT_ID_2 = "";    // Her chat ID
+
+   // Person 3 (Optional)
+   const char* TELEGRAM_BOT_TOKEN_3 = "";
+   const char* TELEGRAM_CHAT_ID_3 = "";
    ```
 3. Save the file
 
 **Multiple Users Setup:**
-- **Each person needs their own IFTTT account** and webhook key
-- Get webhook keys from https://ifttt.com/maker_webhooks/settings (after logging in)
-- Both people should create the same applets (Steps 3 & 4) in their own accounts
-- The device will send notifications to all configured webhook keys
-- Leave a webhook key blank (`""`) to disable that notification slot
+- Each person creates their own bot following Steps 1-2
+- Each person gets their own bot token and chat ID
+- Add each person's credentials to `secrets.h`
+- Leave token and chat ID blank (`""`) to disable notifications for that slot
 
 **Example:**
-- You create an IFTTT account → Get your webhook key → Add as `IFTTT_WEBHOOK_KEY_1`
-- Girlfriend creates her own IFTTT account → Gets her webhook key → Add as `IFTTT_WEBHOOK_KEY_2`
-- Both of you will receive notifications when the red LED turns on!
+- You: Create bot "Dog Tracker 1" → Get token & chat ID → Add as `TELEGRAM_BOT_TOKEN_1` and `TELEGRAM_CHAT_ID_1`
+- Girlfriend: Create bot "Dog Tracker 2" → Get token & chat ID → Add as `TELEGRAM_BOT_TOKEN_2` and `TELEGRAM_CHAT_ID_2`
+- Both of you will receive Telegram messages!
 
-**Note:** You'll receive a notification when the pee timer exceeds 3 hours, with a 1-hour cooldown to prevent spam. The display will show "Alert Sent (2)" to confirm both notifications were sent successfully.
+**Notification Behavior:**
 
-### 6. Install USB Driver (if needed)
+The device sends different notifications based on LED status:
+
+1. **Yellow LED turns on (90 minutes)** - Webhook 1 only:
+   - Message: "Dog should go out soon (Xh Ym since last pee)"
+   - Only YOU receive this notification (not girlfriend or webhook 3)
+   - 1-hour cooldown between yellow notifications
+
+2. **Red LED turns on (3 hours)** - All webhooks:
+   - Message: "Dog needs to pee NOW! (Xh Ym since last pee)"
+   - Everyone receives this notification
+   - 1-hour cooldown between red notifications
+
+3. **Red LED turns off (dog peed)** - All webhooks:
+   - Message: "All clear! Dog has peed."
+   - Only sent when you press the Pee button while red LED is on
+   - Everyone receives this notification
+
+**Quiet Hours:**
+- No notifications are sent between 11pm and 7am
+- Timers and device continue working normally
+
+**Display Feedback:**
+- "Yellow Alert Sent" - Yellow notification sent to person 1
+- "Red Alert Sent (2)" - Red notification sent to 2 people
+- "All Clear Sent (2)" - All clear notification sent to 2 people
+
+### 6. Configure Alexa Announcements with Notify Me (Optional - Free!)
+
+**Note:** Alexa announcements are separate from Telegram. You can use both together or just one.
+
+The Notify Me skill is completely free and lets Alexa make voice announcements. Unlike Telegram, Alexa will announce yellow and red alerts but NOT "all clear" messages (so Alexa won't announce when the dog has peed).
+
+#### Step 1: Enable Notify Me Skill
+1. Open the Alexa app on your phone
+2. Go to Skills & Games
+3. Search for "Notify Me" (by Thomptronics)
+4. Enable the skill
+5. Grant permission to send notifications
+
+#### Step 2: Get Your Access Code
+1. Say to your Alexa: **"Alexa, open Notify Me"**
+2. Alexa will introduce itself and send your access code to your email
+3. Check your email for the access code (looks like `amzn1.ask.account.XXXXX`)
+
+#### Step 3: Add Access Code to secrets.h
+1. Edit `dog-potty-tracker/secrets.h`
+2. Add your Notify Me access code:
+   ```cpp
+   // Notify Me (Alexa) Configuration
+   const char* NOTIFY_ME_ACCESS_CODE = "amzn1.ask.account.XXXXX";
+   ```
+3. Save the file
+
+**How it works:**
+- Yellow LED turns on → Alexa announces: "The dog should go outside soon"
+- Red LED turns on → Alexa announces: "The dog needs to pee right now!"
+- Red LED turns off → Alexa stays silent (only Telegram notification sent)
+- Quiet hours (11pm-7am): No Alexa announcements
+
+**How to hear notifications:**
+- When your Echo device chimes and the light ring turns yellow, say **"Alexa, what are my notifications?"**
+- Alexa will read your notifications out loud
+
+**Limitations:**
+- Amazon limits notifications to 5 per 5-minute period
+- This is plenty for the dog potty tracker (1-hour cooldown between alerts)
+
+### 7. Install USB Driver (if needed)
 
 If your computer doesn't recognize the WeMos D1 Mini:
 - WeMos D1 Mini uses **CH340** USB-to-serial chip

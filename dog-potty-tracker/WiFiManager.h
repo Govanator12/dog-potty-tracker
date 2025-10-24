@@ -5,6 +5,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
+#include <WiFiClientSecure.h>
 #include <time.h>
 #include "config.h"
 
@@ -27,8 +28,11 @@ public:
   // Force time sync
   void syncTime();
 
-  // Send IFTTT notification
-  bool sendIFTTTNotification(const char* webhookKey, const char* eventName, const char* value1);
+  // Send Telegram notification
+  bool sendTelegramNotification(const char* botToken, const char* chatID, const char* message);
+
+  // Send Notify Me (Alexa) notification
+  bool sendNotifyMeNotification(const char* accessCode, const char* message);
 
 private:
   const char* wifiSsid;
@@ -46,6 +50,9 @@ private:
 
   // Check if time sync is complete
   bool checkTimeSync();
+
+  // URL encode helper function for Telegram
+  String urlencode(const char* str);
 };
 
 #endif
