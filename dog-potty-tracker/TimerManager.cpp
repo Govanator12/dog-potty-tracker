@@ -29,12 +29,10 @@ void TimerManager::resetOutside() {
 
 void TimerManager::resetPee() {
   reset(TIMER_PEE);
-  reset(TIMER_OUTSIDE);  // Pee implies went outside
 }
 
 void TimerManager::resetPoop() {
   reset(TIMER_POOP);
-  reset(TIMER_OUTSIDE);  // Poop implies went outside
 }
 
 unsigned long TimerManager::getElapsed(Timer timer) {

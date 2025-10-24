@@ -19,7 +19,6 @@
 
 // Button Configuration
 #define DEBOUNCE_DELAY 50        // milliseconds
-#define LONG_PRESS_DURATION 3000 // milliseconds (3 seconds)
 
 // Display Configuration
 #define VIEW_ROTATION_INTERVAL 5000  // milliseconds (5 seconds)
@@ -44,7 +43,7 @@
 #define NTP_SERVER1 "pool.ntp.org"
 #define NTP_SERVER2 "time.nist.gov"
 #define TIMEZONE_OFFSET -5  // EST, adjust for your timezone (PST = -8, CST = -6, MST = -7, EST = -5)
-#define DST_OFFSET 0        // Daylight saving time offset (usually 0 or 1)
+// Note: DST is now calculated automatically based on US DST rules (no manual configuration needed)
 
 // WiFi Configuration
 #define WIFI_CONNECT_TIMEOUT 10000  // milliseconds (10 seconds)
@@ -52,7 +51,7 @@
 
 // Telegram Notifications Configuration
 #define TELEGRAM_NOTIFICATION_COOLDOWN 3600000  // 1 hour in milliseconds (prevent spam)
-#define NOTIFICATION_QUIET_START_HOUR 23     // 11 PM - don't send notifications
+#define NOTIFICATION_QUIET_START_HOUR 22     // 10 PM - don't send notifications
 #define NOTIFICATION_QUIET_END_HOUR 7        // 7 AM - resume notifications
 
 // Debug Configuration

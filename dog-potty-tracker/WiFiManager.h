@@ -32,7 +32,7 @@ public:
   bool sendTelegramNotification(const char* botToken, const char* chatID, const char* message);
 
   // Send Notify Me (Alexa) notification
-  bool sendNotifyMeNotification(const char* accessCode, const char* message);
+  bool sendNotifyMeNotification(const char* accessCode, const char* message, const char* targetDevice = nullptr);
 
 private:
   const char* wifiSsid;
@@ -50,6 +50,9 @@ private:
 
   // Check if time sync is complete
   bool checkTimeSync();
+
+  // Calculate DST offset based on US DST rules
+  int calculateDSTOffset();
 
   // URL encode helper function for Telegram
   String urlencode(const char* str);

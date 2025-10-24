@@ -88,8 +88,24 @@ bool WiFiManager::isTimeSynced() {
 void WiFiManager::syncTime() {
   DEBUG_PRINTLN("WiFiManager: Syncing time with NTP...");
 
-  // Configure time with timezone offset
-  configTime(TIMEZONE_OFFSET * 3600, DST_OFFSET * 3600, NTP_SERVER1, NTP_SERVER2);
+  // First sync time without DST to get accurate current time
+  configTime(TIMEZONE_OFFSET * 3600, 0, NTP_SERVER1, NTP_SERVER2);
+
+  // Wait for initial time sync (non-blocking check)
+  int attempts = 0;
+  while (time(nullptr) < 1000000000 && attempts < 50) {
+    delay(100);
+    attempts++;
+  }
+
+  // Now calculate DST offset based on synced time
+  int dstOffset = calculateDSTOffset();
+
+  DEBUG_PRINT("WiFiManager: DST offset = ");
+  DEBUG_PRINTLN(dstOffset);
+
+  // Reconfigure time with correct DST offset
+  configTime(TIMEZONE_OFFSET * 3600, dstOffset * 3600, NTP_SERVER1, NTP_SERVER2);
 }
 
 bool WiFiManager::checkTimeSync() {
@@ -147,10 +163,10 @@ bool WiFiManager::sendTelegramNotification(const char* botToken, const char* cha
   }
 }
 
-bool WiFiManager::sendNotifyMeNotification(const char* accessCode, const char* message) {
+bool WiFiManager::sendNotifyMeNotification(const char* accessCode, const char* message, const char* targetDevice) {
   // Check if we're connected to WiFi
   if (!isConnected()) {
-    DEBUG_PRINTLN("WiFiManager: Cannot send Notify Me notification - not connected to WiFi");
+    DEBUG_PRINTLN("WiFiManager: Cannot send Notify Me announcement - not connected to WiFi");
     return false;
   }
 
@@ -165,38 +181,110 @@ bool WiFiManager::sendNotifyMeNotification(const char* accessCode, const char* m
 
   HTTPClient http;
 
-  // Notify Me API endpoint
-  String url = "https://api.notifymyecho.com/v1/NotifyMe";
+  // Notify Me Announce API endpoint (for spoken announcements)
+  String url = "https://api.notifymyecho.com/v1/NotifyMe/Announce";
 
-  DEBUG_PRINTLN("WiFiManager: Sending Notify Me (Alexa) notification...");
+  DEBUG_PRINTLN("WiFiManager: Sending Notify Me (Alexa) announcement...");
+  if (targetDevice != nullptr && strlen(targetDevice) > 0) {
+    DEBUG_PRINT("WiFiManager: Target device: ");
+    DEBUG_PRINTLN(targetDevice);
+  }
 
   // Begin HTTP connection
   http.begin(client, url);
   http.addHeader("Content-Type", "application/json");
 
-  // Build JSON payload
-  String payload = "{\"notification\":\"";
+  // Build JSON payload for announcement
+  String payload = "{\"text\":\"";
   payload += message;
   payload += "\",\"accessCode\":\"";
   payload += accessCode;
-  payload += "\"}";
+  payload += "\"";
+
+  // Add target device if specified
+  if (targetDevice != nullptr && strlen(targetDevice) > 0) {
+    payload += ",\"target\":\"";
+    payload += targetDevice;
+    payload += "\"";
+  }
+
+  payload += "}";
 
   // Send POST request
   int httpResponseCode = http.POST(payload);
 
   if (httpResponseCode > 0) {
-    DEBUG_PRINT("WiFiManager: Notify Me notification sent successfully (HTTP ");
+    DEBUG_PRINT("WiFiManager: Notify Me announcement sent successfully (HTTP ");
     DEBUG_PRINT(httpResponseCode);
     DEBUG_PRINTLN(")");
     http.end();
     return true;
   } else {
-    DEBUG_PRINT("WiFiManager: Notify Me notification failed (Error: ");
+    DEBUG_PRINT("WiFiManager: Notify Me announcement failed (Error: ");
     DEBUG_PRINT(httpResponseCode);
     DEBUG_PRINTLN(")");
     http.end();
     return false;
   }
+}
+
+// Calculate DST offset based on US DST rules
+// DST starts: Second Sunday in March at 2:00 AM
+// DST ends: First Sunday in November at 2:00 AM
+int WiFiManager::calculateDSTOffset() {
+  time_t now = time(nullptr);
+  struct tm* timeinfo = localtime(&now);
+
+  int year = timeinfo->tm_year + 1900;
+  int month = timeinfo->tm_mon + 1;  // tm_mon is 0-11
+  int day = timeinfo->tm_mday;
+  int hour = timeinfo->tm_hour;
+
+  // Calculate second Sunday in March
+  int marchSecondSunday = 0;
+  struct tm marchFirst = {0};
+  marchFirst.tm_year = year - 1900;
+  marchFirst.tm_mon = 2;  // March (0-based)
+  marchFirst.tm_mday = 1;
+  mktime(&marchFirst);  // Normalize the struct
+
+  int firstDayOfWeek = marchFirst.tm_wday;  // 0=Sunday
+  marchSecondSunday = (firstDayOfWeek == 0) ? 8 : (15 - firstDayOfWeek);
+
+  // Calculate first Sunday in November
+  int novemberFirstSunday = 0;
+  struct tm novemberFirst = {0};
+  novemberFirst.tm_year = year - 1900;
+  novemberFirst.tm_mon = 10;  // November (0-based)
+  novemberFirst.tm_mday = 1;
+  mktime(&novemberFirst);  // Normalize the struct
+
+  firstDayOfWeek = novemberFirst.tm_wday;
+  novemberFirstSunday = (firstDayOfWeek == 0) ? 1 : (8 - firstDayOfWeek);
+
+  // Check if we're currently in DST
+  bool isDST = false;
+
+  if (month > 3 && month < 11) {
+    // Between April and October - always DST
+    isDST = true;
+  } else if (month == 3) {
+    // March - check if after second Sunday at 2 AM
+    if (day > marchSecondSunday) {
+      isDST = true;
+    } else if (day == marchSecondSunday && hour >= 2) {
+      isDST = true;
+    }
+  } else if (month == 11) {
+    // November - check if before first Sunday at 2 AM
+    if (day < novemberFirstSunday) {
+      isDST = true;
+    } else if (day == novemberFirstSunday && hour < 2) {
+      isDST = true;
+    }
+  }
+
+  return isDST ? 1 : 0;
 }
 
 // URL encode helper function

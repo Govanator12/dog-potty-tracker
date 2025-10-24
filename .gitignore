@@ -1,6 +1,9 @@
 # WiFi credentials (contains sensitive information)
 dog-potty-tracker/secrets.h
 
+# Personal wiring guide (may contain specific setup details)
+WIRING_GUIDE.md
+
 # Temporary files
 *.swp
 *.swo

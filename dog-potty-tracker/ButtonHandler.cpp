@@ -6,10 +6,7 @@ ButtonHandler::ButtonHandler() {
     buttonState[i] = false;
     lastButtonState[i] = false;
     lastDebounceTime[i] = 0;
-    buttonPressTime[i] = 0;
-    longPressFired[i] = false;
-    shortPressCallback[i] = nullptr;
-    longPressCallback[i] = nullptr;
+    callback[i] = nullptr;
   }
 }
 
@@ -44,38 +41,15 @@ void ButtonHandler::checkButton(Button button) {
     if (reading != buttonState[button]) {
       buttonState[button] = reading;
 
-      // Button just pressed
+      // Button just pressed (rising edge)
       if (buttonState[button]) {
-        buttonPressTime[button] = millis();
-        longPressFired[button] = false;
         DEBUG_PRINT("Button pressed: ");
         DEBUG_PRINTLN(button);
-      }
-      // Button just released
-      else {
-        unsigned long pressDuration = millis() - buttonPressTime[button];
 
-        // If it was a short press (and long press wasn't fired)
-        if (pressDuration < LONG_PRESS_DURATION && !longPressFired[button]) {
-          if (shortPressCallback[button] != nullptr) {
-            DEBUG_PRINT("Short press callback: ");
-            DEBUG_PRINTLN(button);
-            shortPressCallback[button](button);
-          }
+        // Call the callback immediately on press
+        if (callback[button] != nullptr) {
+          callback[button](button);
         }
-      }
-    }
-  }
-
-  // Check for long press while button is held
-  if (buttonState[button] && !longPressFired[button]) {
-    unsigned long pressDuration = millis() - buttonPressTime[button];
-    if (pressDuration >= LONG_PRESS_DURATION) {
-      longPressFired[button] = true;
-      if (longPressCallback[button] != nullptr) {
-        DEBUG_PRINT("Long press callback: ");
-        DEBUG_PRINTLN(button);
-        longPressCallback[button](button);
       }
     }
   }
@@ -101,10 +75,6 @@ uint8_t ButtonHandler::getPin(Button button) {
   }
 }
 
-void ButtonHandler::setCallback(Button button, ButtonCallback callback) {
-  shortPressCallback[button] = callback;
-}
-
-void ButtonHandler::setLongPressCallback(Button button, ButtonCallback callback) {
-  longPressCallback[button] = callback;
+void ButtonHandler::setCallback(Button button, ButtonCallback cb) {
+  callback[button] = cb;
 }

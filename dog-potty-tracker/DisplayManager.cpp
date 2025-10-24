@@ -15,13 +15,49 @@ bool DisplayManager::begin() {
   // Initialize I2C with custom pins
   Wire.begin(PIN_OLED_SDA, PIN_OLED_SCL);
 
+  Serial.println("DisplayManager: Initializing I2C...");
+  Serial.print("DisplayManager: SDA=GPIO");
+  Serial.print(PIN_OLED_SDA);
+  Serial.print(", SCL=GPIO");
+  Serial.println(PIN_OLED_SCL);
+
+  // Scan I2C bus to find devices
+  Serial.println("DisplayManager: Scanning I2C bus...");
+  byte error, address;
+  int nDevices = 0;
+  for(address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+    if (error == 0) {
+      Serial.print("DisplayManager: I2C device found at 0x");
+      if (address < 16) Serial.print("0");
+      Serial.println(address, HEX);
+      nDevices++;
+    }
+  }
+  if (nDevices == 0) {
+    Serial.println("DisplayManager: No I2C devices found!");
+  } else {
+    Serial.print("DisplayManager: Found ");
+    Serial.print(nDevices);
+    Serial.println(" I2C device(s)");
+  }
+
+  Serial.print("DisplayManager: Trying I2C address 0x");
+  Serial.println(OLED_ADDRESS, HEX);
+
   // Initialize display
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
-    DEBUG_PRINTLN("SSD1306 allocation failed");
+    Serial.println("DisplayManager: SSD1306 allocation FAILED!");
+    Serial.println("DisplayManager: Check wiring and I2C address");
+    Serial.println("DisplayManager: Try changing OLED_ADDRESS in config.h to 0x3D");
     return false;
   }
 
-  DEBUG_PRINTLN("DisplayManager initialized");
+  // Rotate display 180 degrees
+  display.setRotation(2);
+
+  Serial.println("DisplayManager: Display initialized successfully!");
 
   // Clear display
   display.clearDisplay();

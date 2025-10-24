@@ -90,34 +90,96 @@ D8 (GPIO15)            GND
 
 ### Breadboard Setup (400-point recommended)
 
-**Power Rails:**
-- Connect 3V3 pin to positive rail (red)
-- Connect GND pin to negative rail (blue/black)
-- Optionally connect 5V to separate positive rail if needed
+**WeMos D1 Mini Placement:**
+- Straddle center divider of breadboard (left pins in columns A-E, right pins in columns F-J)
+- 3V3 pin at top (row 1, right side)
+- Takes ~15 rows of breadboard space (rows 1-15)
+- USB connector points upward
+
+**WeMos Pin Layout on Breadboard:**
+```
+Left Side (Cols A-E)    Row    Right Side (Cols F-J)
+5V (B1)                  1     3V3 (I1)
+G/GND (B2)               2     D8
+D4 (B3)                  3     D7
+D3 (B4)                  4     D6
+D2 (B5)                  5     D5
+D1 (B6)                  6     D0
+RX (B7)                  7     A0
+TX (B8)                  8     RST
+```
+
+**Note:** Board is mounted upside down (microUSB at bottom)
+
+**Note:** Column letters are examples. Your breadboard may use different column labeling.
+
+**Power Rails Setup:**
+1. Connect jumper wire from I1 (3V3 pin) → Positive power rail (red +)
+2. Connect jumper wire from B2 (GND pin on left side) → Negative power rail (blue/black -)
+3. This distributes power/ground to all components via the rails
 
 **OLED Display:**
-1. Insert OLED on left side of breadboard
-2. VCC -> Positive rail (3V3)
-3. GND -> Negative rail
-4. SCL -> D1 (direct jumper wire)
-5. SDA -> D2 (direct jumper wire)
+1. Insert OLED in rows 13-16, column J (far right side)
+   - Pin order from left to right: GND, VCC, SCL, SDA
+   - Pin 1 (GND) at J16, Pin 2 (VCC) at J15, Pin 3 (SCL) at J14, Pin 4 (SDA) at J13
+   - Screen will cover the right side power rails (which are unused)
+   - This leaves rows 10-31 open in the center for buttons and LEDs
+2. GND (Pin 1, row 16, col J) → Jumper to negative rail (connected to B2/GND)
+3. VCC (Pin 2, row 15, col J) → Jumper to positive rail (connected to I1/3V3)
+4. SCL (Pin 3, row 14, col J) → Jumper wire to row 6, column B (D1 pin at B6)
+5. SDA (Pin 4, row 13, col J) → Jumper wire to row 5, column B (D2 pin at B5)
 
-**Buttons (for each of 3 buttons):**
-1. Place button across center divider of breadboard
-2. One leg -> Connect to 3V3 rail
-3. Other leg -> Connect to D5/D6/D7 pin on WeMos
-4. Same leg (to pin) -> Connect 10k-ohm resistor to GND rail
-5. Result: Pull-down configuration, button press = HIGH signal
+**Button 1 (Outside) - Rows 18-20 (physical size ~17-21):**
+1. Place button across center divider (legs in columns E and F)
+2. Button pins occupy rows 18-20
+3. Button leg 1 (col E, row 18) → Jumper to positive rail (3V3)
+4. Button leg 2 (col F, row 20) → Jumper to row 5, column I (D5 pin at I5)
+5. Same row (row 20, col G) → 10k-ohm resistor → negative rail (GND)
+6. Result: Pull-down configuration, button press = HIGH signal
+7. Note: Physical button body occupies approximately rows 17-21
 
-**LEDs (for each of 3 LEDs):**
-1. Anode (long leg, +) -> Connect to 220-330 ohm resistor
-2. Resistor other end -> Connect to D0/D3/D8 pin on WeMos
-3. Cathode (short leg, -) -> Connect to GND rail
+**Button 2 (Pee) - Rows 23-25 (physical size ~22-26):**
+1. Place button across center divider (legs in columns E and F)
+2. Button pins occupy rows 23-25
+3. Button leg 1 (col E, row 23) → Jumper to positive rail (3V3)
+4. Button leg 2 (col F, row 25) → Jumper to row 4, column I (D6 pin at I4)
+5. Same row (row 25, col G) → 10k-ohm resistor → negative rail (GND)
+6. Note: Physical button body occupies approximately rows 22-26
 
-**WeMos D1 Mini Placement:**
-- Straddle center divider of breadboard
-- Ensures pins on both sides are accessible
-- Takes ~15 rows of breadboard space
+**Button 3 (Poop) - Rows 28-30 (physical size ~27-31):**
+1. Place button across center divider (legs in columns E and F)
+2. Button pins occupy rows 28-30
+3. Button leg 1 (col E, row 28) → Jumper to positive rail (3V3)
+4. Button leg 2 (col F, row 30) → Jumper to row 3, column I (D7 pin at I3)
+5. Same row (row 30, col G) → 10k-ohm resistor → negative rail (GND)
+6. Note: Physical button body occupies approximately rows 27-31
+
+**LED Green - Rows 33-34:**
+1. Insert LED anode (long leg, +) in row 33, column G
+2. Insert 220-330 ohm resistor: one end in row 33, col H; other end in row 6, col I (D0 pin at I6)
+3. Insert LED cathode (short leg, -) in row 34, column G → Jumper to negative rail (GND)
+
+**LED Yellow - Rows 36-37:**
+1. Insert LED anode (long leg, +) in row 36, column G
+2. Insert 220-330 ohm resistor: one end in row 36, col H; other end in row 4, col B (D3 pin at B4)
+3. Insert LED cathode (short leg, -) in row 37, column G → Jumper to negative rail (GND)
+
+**LED Red - Rows 39-40:**
+1. Insert LED anode (long leg, +) in row 39, column G
+2. Insert 220-330 ohm resistor: one end in row 39, col H; other end in row 2, col I (D8 pin at I2)
+3. Insert LED cathode (short leg, -) in row 40, column G → Jumper to negative rail (GND)
+
+**Summary of Connections:**
+- **Power Distribution:** 3V3 (I1) → Positive rail, GND (B2) → Negative rail
+- **OLED:** Column J, rows 13-16 (covers right rails), I2C on D1 (B6) and D2 (B5)
+- **Buttons:** D5 (I5) rows 18-20, D6 (I4) rows 23-25, D7 (I3) rows 28-30
+- **LEDs:** D0 (I6) rows 33-34, D3 (B4) rows 36-37, D8 (I2) rows 39-40
+
+**WeMos D1 Mini Orientation:**
+- 3V3 pin at top right (I1), 5V pin at top left (B1)
+- Board mounted upside down - microUSB connector at bottom
+- Straddling center divider (columns B and I)
+- USB connector accessible for power/programming
 
 ### Direct Wiring (No Breadboard)
 
@@ -211,7 +273,7 @@ dog-potty-tracker/
     secrets.h.example     # Template for WiFi setup (committed)
     TimerManager.h        # Timer state and logic
     TimerManager.cpp
-    ButtonHandler.h       # Button debouncing, press detection, long-press
+    ButtonHandler.h       # Button debouncing and press detection
     ButtonHandler.cpp
     DisplayManager.h      # OLED rendering and view rotation
     DisplayManager.cpp
@@ -346,40 +408,32 @@ When WiFi is disconnected, timestamp view is not shown since timestamps are unre
 
 ### Button Logic
 
-**Button 1 (Outside) - Single Press:**
+**Button 1 (Outside):**
 - Action: Log "went outside" event
 - Resets: Outside timer only
 - Use case: Took dog out but didn't see them go
 
-**Button 2 (Pee) - Single Press:**
+**Button 2 (Pee):**
 - Action: Log "pee" event
-- Resets: Pee timer AND Outside timer
-- Use case: Dog peed (implies they went outside)
+- Resets: Pee timer only
+- Use case: Dog peed
 
-**Button 3 (Poop) - Single Press:**
+**Button 3 (Poop):**
 - Action: Log "poop" event
-- Resets: Poop timer AND Outside timer
-- Use case: Dog pooped (implies they went outside)
-
-**Any Button - Long Press (3 seconds):**
-- Action: Reset only that specific timer
-- Resets: Individual timer to 00h 00m
-- Use case: Correct mistakes or manual reset
-- Visual feedback: Display shows "Resetting [Timer Name]..."
+- Resets: Poop timer only
+- Use case: Dog pooped
 
 ### Button Debouncing
 
 **Implementation requirements:**
 - Debounce delay: 50ms minimum
-- Long-press threshold: 3000ms (3 seconds)
 - Multi-press detection not needed (separate buttons for each action)
 
 **State machine:**
 1. Button idle (waiting for press)
 2. Button pressed (debounce timer starts)
 3. Debounce complete (check if still pressed)
-4. Long-press detection (check if held for 3 seconds)
-5. Button release (trigger action)
+4. Button release (trigger action)
 
 ### Display System
 
@@ -695,7 +749,6 @@ private:
 **Responsibilities:**
 - Read button states
 - Debounce button presses
-- Detect short press vs long press
 - Call appropriate callback functions
 
 **Key methods:**
@@ -704,7 +757,6 @@ class ButtonHandler {
 public:
     void update();  // Call every loop iteration
     void setCallback(Button button, ButtonCallback callback);
-    void setLongPressCallback(Button button, ButtonCallback callback);
 
 private:
     void checkButton(Button button);
@@ -712,7 +764,6 @@ private:
     unsigned long lastDebounceTime[3];
     bool buttonState[3];
     bool lastButtonState[3];
-    unsigned long buttonPressTime[3];
 };
 ```
 
@@ -722,7 +773,6 @@ private:
 3. Wait debounce delay (50ms)
 4. Re-read button pin
 5. If state consistent: Register as valid press
-6. Track press duration for long-press detection
 
 ### Display Manager
 
@@ -968,7 +1018,6 @@ uint8_t calculateChecksum(PersistentData* data) {
 
 // Button Configuration
 #define DEBOUNCE_DELAY 50        // milliseconds
-#define LONG_PRESS_DURATION 3000 // milliseconds
 
 // Display Configuration
 #define VIEW_ROTATION_INTERVAL 5000  // milliseconds

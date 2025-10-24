@@ -45,7 +45,6 @@ bool redAlertActive = false;
 
 // Function prototypes
 void onButtonShortPress(Button button);
-void onButtonLongPress(Button button);
 bool isNightMode();
 bool isQuietHours();
 void handleNightMode();
@@ -63,22 +62,23 @@ void setup() {
   storage.begin();
 
   // Initialize display
+  DEBUG_PRINTLN("About to initialize display...");
   if (!displayManager.begin()) {
     DEBUG_PRINTLN("ERROR: Display initialization failed!");
     // Continue anyway - device can still function
   }
+  DEBUG_PRINTLN("Display initialization attempt complete");
 
   // Show startup message
+  DEBUG_PRINTLN("Showing startup message...");
   displayManager.showStartup();
+  DEBUG_PRINTLN("Startup message complete");
 
   // Initialize button handler
   buttonHandler.begin();
   buttonHandler.setCallback(BTN_OUTSIDE, onButtonShortPress);
   buttonHandler.setCallback(BTN_PEE, onButtonShortPress);
   buttonHandler.setCallback(BTN_POOP, onButtonShortPress);
-  buttonHandler.setLongPressCallback(BTN_OUTSIDE, onButtonLongPress);
-  buttonHandler.setLongPressCallback(BTN_PEE, onButtonLongPress);
-  buttonHandler.setLongPressCallback(BTN_POOP, onButtonLongPress);
 
   // Initialize LED controller
   ledController.begin();
@@ -175,32 +175,6 @@ void onButtonShortPress(Button button) {
   saveToEEPROM();
 }
 
-void onButtonLongPress(Button button) {
-  DEBUG_PRINT("Long press: ");
-  DEBUG_PRINTLN(button);
-
-  // Reset only the specific timer
-  switch (button) {
-    case BTN_OUTSIDE:
-      timerManager.reset(TIMER_OUTSIDE);
-      displayManager.showFeedback("Reset Out", 1500);
-      break;
-
-    case BTN_PEE:
-      timerManager.reset(TIMER_PEE);
-      displayManager.showFeedback("Reset Pee", 1500);
-      break;
-
-    case BTN_POOP:
-      timerManager.reset(TIMER_POOP);
-      displayManager.showFeedback("Reset Poop", 1500);
-      break;
-  }
-
-  // Save to EEPROM immediately after reset
-  saveToEEPROM();
-}
-
 bool isNightMode() {
   // Only enable night mode if time is synced
   if (!wifiManager.isTimeSynced()) {
@@ -225,7 +199,7 @@ bool isQuietHours() {
   struct tm* t = localtime(&now);
   int hour = t->tm_hour;
 
-  // Quiet hours: 11pm (23) to 7am
+  // Quiet hours: 10pm (22) to 7am
   return (hour >= NOTIFICATION_QUIET_START_HOUR || hour < NOTIFICATION_QUIET_END_HOUR);
 }
 
@@ -250,7 +224,7 @@ void saveToEEPROM() {
 }
 
 void checkAndSendNotification() {
-  // Don't send notifications during quiet hours (11pm-7am)
+  // Don't send notifications during quiet hours (10pm-7am)
   if (isQuietHours()) {
     DEBUG_PRINTLN("Quiet hours active - notifications suppressed");
     return;
@@ -272,7 +246,7 @@ void checkAndSendNotification() {
 
     if (timeSinceLastYellowNotification >= TELEGRAM_NOTIFICATION_COOLDOWN || lastYellowNotificationTime == 0) {
       // Build notification message
-      String message = "Dog should go out soon (";
+      String message = "Fish should go out soon (";
       message += peeMinutes / 60;
       message += "h ";
       message += peeMinutes % 60;
@@ -292,7 +266,7 @@ void checkAndSendNotification() {
       // Send to Alexa via Notify Me (if configured)
       if (strlen(NOTIFY_ME_ACCESS_CODE) > 0) {
         DEBUG_PRINTLN("Sending yellow alert to Alexa...");
-        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, "The dog should go outside soon.")) {
+        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, "Fish should go outside soon.", ALEXA_DEVICE_NAME)) {
           DEBUG_PRINTLN("Alexa yellow notification sent successfully!");
         }
       }
@@ -308,7 +282,7 @@ void checkAndSendNotification() {
 
     if (timeSinceLastRedNotification >= TELEGRAM_NOTIFICATION_COOLDOWN || lastRedNotificationTime == 0) {
       // Build notification message
-      String message = "Dog needs to pee NOW! (";
+      String message = "Fish needs to pee NOW! (";
       message += peeMinutes / 60;
       message += "h ";
       message += peeMinutes % 60;
@@ -343,7 +317,7 @@ void checkAndSendNotification() {
       // Send to Alexa via Notify Me (if configured)
       if (strlen(NOTIFY_ME_ACCESS_CODE) > 0) {
         DEBUG_PRINTLN("Sending red alert to Alexa...");
-        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, "The dog needs to pee right now!")) {
+        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, "Fish needs to pee right now!", ALEXA_DEVICE_NAME)) {
           DEBUG_PRINTLN("Alexa red notification sent successfully!");
         }
       }
@@ -368,7 +342,7 @@ void checkAndSendNotification() {
   // === RED LED TURNED OFF (All Clear notification) ===
   if (!redLEDIsOn && redLEDWasOn && redAlertActive) {
     // Red LED just turned off after being on - send "all clear" to all webhooks
-    String message = "All clear! Dog has peed.";
+    String message = "All clear! Fish has peed.";
 
     int clearSuccessCount = 0;
 

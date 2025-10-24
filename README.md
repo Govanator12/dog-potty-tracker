@@ -157,7 +157,7 @@ The device sends different notifications based on LED status:
    - Everyone receives this notification
 
 **Quiet Hours:**
-- No notifications are sent between 11pm and 7am
+- No notifications are sent between 10pm and 7am
 - Timers and device continue working normally
 
 **Display Feedback:**
@@ -181,14 +181,14 @@ The Notify Me skill is completely free and lets Alexa make voice announcements. 
 #### Step 2: Get Your Access Code
 1. Say to your Alexa: **"Alexa, open Notify Me"**
 2. Alexa will introduce itself and send your access code to your email
-3. Check your email for the access code (looks like `amzn1.ask.account.XXXXX`)
+3. Check your email for the access code (looks like `nmac.XXXXX`)
 
 #### Step 3: Add Access Code to secrets.h
 1. Edit `dog-potty-tracker/secrets.h`
 2. Add your Notify Me access code:
    ```cpp
    // Notify Me (Alexa) Configuration
-   const char* NOTIFY_ME_ACCESS_CODE = "amzn1.ask.account.XXXXX";
+   const char* NOTIFY_ME_ACCESS_CODE = "nmac.XXXXX";
    ```
 3. Save the file
 
@@ -196,7 +196,7 @@ The Notify Me skill is completely free and lets Alexa make voice announcements. 
 - Yellow LED turns on → Alexa announces: "The dog should go outside soon"
 - Red LED turns on → Alexa announces: "The dog needs to pee right now!"
 - Red LED turns off → Alexa stays silent (only Telegram notification sent)
-- Quiet hours (11pm-7am): No Alexa announcements
+- Quiet hours (10pm-7am): No Alexa announcements
 
 **How to hear notifications:**
 - When your Echo device chimes and the light ring turns yellow, say **"Alexa, what are my notifications?"**
@@ -256,21 +256,17 @@ If your computer doesn't recognize the WeMos D1 Mini:
 
 ### Button Functions
 
-**Outside Button (1 press)**
+**Outside Button**
 - Logs "went outside" event
 - Resets Outside timer only
 
-**Pee Button (1 press)**
+**Pee Button**
 - Logs "pee" event
-- Resets Pee timer AND Outside timer
+- Resets Pee timer only
 
-**Poop Button (1 press)**
+**Poop Button**
 - Logs "poop" event
-- Resets Poop timer AND Outside timer
-
-**Any Button (Hold 3 seconds)**
-- Resets that specific timer only
-- Display shows "Resetting [Timer Name]..."
+- Resets Poop timer only
 
 ### LED Status Indicators
 
