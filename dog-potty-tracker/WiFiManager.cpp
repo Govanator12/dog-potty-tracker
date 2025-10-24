@@ -97,3 +97,55 @@ bool WiFiManager::checkTimeSync() {
   // Valid time is after year 2001 (timestamp > 1000000000)
   return now > 1000000000;
 }
+
+bool WiFiManager::sendIFTTTNotification(const char* webhookKey, const char* eventName, const char* value1) {
+  // Check if we're connected to WiFi
+  if (!isConnected()) {
+    DEBUG_PRINTLN("WiFiManager: Cannot send IFTTT notification - not connected to WiFi");
+    return false;
+  }
+
+  // Check if webhook key is configured
+  if (webhookKey == nullptr || strlen(webhookKey) == 0) {
+    DEBUG_PRINTLN("WiFiManager: IFTTT webhook key not configured");
+    return false;
+  }
+
+  WiFiClient client;
+  HTTPClient http;
+
+  // Build IFTTT webhook URL
+  String url = "http://maker.ifttt.com/trigger/";
+  url += eventName;
+  url += "/with/key/";
+  url += webhookKey;
+
+  DEBUG_PRINT("WiFiManager: Sending IFTTT notification to: ");
+  DEBUG_PRINTLN(eventName);
+
+  // Begin HTTP connection
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+
+  // Build JSON payload
+  String payload = "{\"value1\":\"";
+  payload += value1;
+  payload += "\"}";
+
+  // Send POST request
+  int httpResponseCode = http.POST(payload);
+
+  if (httpResponseCode > 0) {
+    DEBUG_PRINT("WiFiManager: IFTTT notification sent successfully (HTTP ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+    http.end();
+    return true;
+  } else {
+    DEBUG_PRINT("WiFiManager: IFTTT notification failed (Error: ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+    http.end();
+    return false;
+  }
+}

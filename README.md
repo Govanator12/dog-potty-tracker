@@ -8,6 +8,7 @@ A hardware device to track your dog's potty activities with three independent ti
 - **OLED Display**: 0.96" display with auto-rotating views (elapsed time and timestamps)
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
 - **WiFi & NTP Sync**: Automatic time synchronization for accurate timestamps
+- **IFTTT Notifications**: Push notifications and Alexa announcements when dog needs to go out
 - **Night Mode**: Auto sleep 11pm-5am to save power
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
 - **Long-press Reset**: Hold button for 3 seconds to reset individual timers
@@ -86,7 +87,72 @@ Open Tools -> Manage Libraries and install:
    ```
 3. Save the file (this file is ignored by git for security)
 
-### 5. Install USB Driver (if needed)
+### 5. Configure IFTTT Notifications (Optional)
+
+To receive push notifications and Alexa announcements when the red LED turns on (dog needs to pee):
+
+#### Step 1: Create IFTTT Account
+1. Go to [ifttt.com](https://ifttt.com) and create a free account
+2. Download the IFTTT mobile app (iOS/Android)
+
+#### Step 2: Get Your Webhook Key
+1. Go to [https://ifttt.com/maker_webhooks/settings](https://ifttt.com/maker_webhooks/settings)
+2. Copy your webhook key (looks like: `a1b2c3d4e5f6g7h8i9j0`)
+
+#### Step 3: Create Applet for Push Notifications
+1. Go to [https://ifttt.com/create](https://ifttt.com/create)
+2. Click "If This"
+   - Choose "Webhooks"
+   - Choose "Receive a web request"
+   - Event name: `dog_pee_alert`
+   - Click "Create trigger"
+3. Click "Then That"
+   - Choose "Notifications"
+   - Choose "Send a notification from the IFTTT app"
+   - Message: `{{Value1}}` (this will show the time since last pee)
+   - Click "Create action"
+4. Click "Continue" and "Finish"
+
+#### Step 4: Create Applet for Alexa Announcement
+1. Create another applet at [https://ifttt.com/create](https://ifttt.com/create)
+2. Click "If This"
+   - Choose "Webhooks"
+   - Choose "Receive a web request"
+   - Event name: `dog_pee_alert` (same as before)
+   - Click "Create trigger"
+3. Click "Then That"
+   - Choose "Amazon Alexa"
+   - Choose "Make an announcement"
+   - Message: `Your dog needs to pee! {{Value1}}`
+   - Click "Create action"
+4. Click "Continue" and "Finish"
+
+#### Step 5: Add Webhook Keys to secrets.h
+1. Edit `dog-potty-tracker/secrets.h`
+2. Add your webhook keys (supports up to 3 people):
+   ```cpp
+   const char* IFTTT_WEBHOOK_KEY_1 = "your_webhook_key_here";
+   const char* IFTTT_WEBHOOK_KEY_2 = "girlfriend_webhook_key_here";
+   const char* IFTTT_WEBHOOK_KEY_3 = "";  // Optional third person
+   const char* IFTTT_EVENT_NAME = "dog_pee_alert";
+   ```
+3. Save the file
+
+**Multiple Users Setup:**
+- **Each person needs their own IFTTT account** and webhook key
+- Get webhook keys from https://ifttt.com/maker_webhooks/settings (after logging in)
+- Both people should create the same applets (Steps 3 & 4) in their own accounts
+- The device will send notifications to all configured webhook keys
+- Leave a webhook key blank (`""`) to disable that notification slot
+
+**Example:**
+- You create an IFTTT account → Get your webhook key → Add as `IFTTT_WEBHOOK_KEY_1`
+- Girlfriend creates her own IFTTT account → Gets her webhook key → Add as `IFTTT_WEBHOOK_KEY_2`
+- Both of you will receive notifications when the red LED turns on!
+
+**Note:** You'll receive a notification when the pee timer exceeds 3 hours, with a 1-hour cooldown to prevent spam. The display will show "Alert Sent (2)" to confirm both notifications were sent successfully.
+
+### 6. Install USB Driver (if needed)
 
 If your computer doesn't recognize the WeMos D1 Mini:
 - WeMos D1 Mini uses **CH340** USB-to-serial chip

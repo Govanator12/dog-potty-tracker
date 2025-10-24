@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClient.h>
 #include <time.h>
 #include "config.h"
 
@@ -24,6 +26,9 @@ public:
 
   // Force time sync
   void syncTime();
+
+  // Send IFTTT notification
+  bool sendIFTTTNotification(const char* webhookKey, const char* eventName, const char* value1);
 
 private:
   const char* wifiSsid;
