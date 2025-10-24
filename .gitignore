@@ -15,6 +15,9 @@ Thumbs.db
 .idea/
 *.code-workspace
 
+# Claude Code settings
+.claude/
+
 # Build artifacts (if using PlatformIO)
 .pio/
 .pioenvs/

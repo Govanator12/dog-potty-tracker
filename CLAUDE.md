@@ -429,18 +429,20 @@ POO: 2:15 PM      -> Yellow section (top 16px)
 
 **Status Determination (checked every loop):**
 
+LEDs are based on the **Pee timer only** (Outside and Poop timers do not affect LED status).
+
 **Green LED:**
-- ON: All timers are within acceptable range (default good state)
+- ON: Pee timer < 90 minutes (default good state)
 - OFF: Yellow or Red condition is active
 
 **Yellow LED (Warning):**
-- ON: Pee timer > 90 minutes OR Poop timer > 2.5 hours
-- OFF: All timers below warning thresholds
+- ON: Pee timer > 90 minutes
+- OFF: Pee timer below warning threshold
 - Overrides: Green LED turns off when Yellow is on
 
 **Red LED (Urgent):**
-- ON: Pee timer > 2.5 hours OR Poop timer > 5 hours
-- OFF: All timers below urgent thresholds
+- ON: Pee timer > 3 hours (180 minutes)
+- OFF: Pee timer below urgent threshold
 - Overrides: Green and Yellow LEDs turn off when Red is on
 
 **Priority:**
@@ -452,12 +454,12 @@ POO: 2:15 PM      -> Yellow section (top 16px)
 
 **Implementation pseudocode:**
 ```cpp
-if (peeTimer > 150 || poopTimer > 300) {  // 2.5hrs or 5hrs in minutes
+if (peeTimer > 180) {  // 3 hours in minutes
     // RED - Urgent
     setLED(RED, HIGH);
     setLED(YELLOW, LOW);
     setLED(GREEN, LOW);
-} else if (peeTimer > 90 || poopTimer > 150) {  // 90min or 2.5hrs in minutes
+} else if (peeTimer > 90) {  // 90 minutes
     // YELLOW - Warning
     setLED(RED, LOW);
     setLED(YELLOW, HIGH);

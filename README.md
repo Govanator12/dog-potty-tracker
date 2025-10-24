@@ -154,9 +154,11 @@ If your computer doesn't recognize the WeMos D1 Mini:
 
 ### LED Status Indicators
 
-- **Green**: All timers good (default state)
-- **Yellow**: Warning - Pee > 90min OR Poop > 2.5hrs
-- **Red**: Urgent - Pee > 2.5hrs OR Poop > 5hrs
+LEDs are based on the **Pee timer only**:
+
+- **Green**: Pee timer < 90 minutes (all good)
+- **Yellow**: Pee timer > 90 minutes (warning)
+- **Red**: Pee timer > 3 hours (urgent)
 
 ### Night Mode (11pm - 5am)
 

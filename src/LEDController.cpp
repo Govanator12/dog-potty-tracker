@@ -30,20 +30,19 @@ void LEDController::update(TimerManager* timerManager) {
 }
 
 void LEDController::evaluateStatus(TimerManager* timerManager) {
-  // Get elapsed times in minutes
+  // Get elapsed time in minutes for pee timer only
   unsigned long peeMinutes = timerManager->getElapsed(TIMER_PEE) / 60;
-  unsigned long poopMinutes = timerManager->getElapsed(TIMER_POOP) / 60;
 
   // Check RED condition first (highest priority)
-  // Red: Pee > 2.5hrs OR Poop > 5hrs
-  if (peeMinutes > RED_PEE_THRESHOLD || poopMinutes > RED_POOP_THRESHOLD) {
+  // Red: Pee > 3hrs (180 minutes)
+  if (peeMinutes > 180) {
     setLED(LED_RED_STATUS, HIGH);
     setLED(LED_YELLOW_STATUS, LOW);
     setLED(LED_GREEN_STATUS, LOW);
   }
   // Check YELLOW condition
-  // Yellow: Pee > 90min OR Poop > 2.5hrs
-  else if (peeMinutes > YELLOW_PEE_THRESHOLD || poopMinutes > YELLOW_POOP_THRESHOLD) {
+  // Yellow: Pee > 90min
+  else if (peeMinutes > 90) {
     setLED(LED_RED_STATUS, LOW);
     setLED(LED_YELLOW_STATUS, HIGH);
     setLED(LED_GREEN_STATUS, LOW);
