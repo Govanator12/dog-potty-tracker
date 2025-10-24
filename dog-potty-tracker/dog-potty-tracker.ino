@@ -123,7 +123,7 @@ void loop() {
   // Update LED status based on timers
   ledController.update(&timerManager);
 
-  // Check if we should send IFTTT notification (red LED turned on)
+  // Check if we should send notifications (yellow/red LED status changes)
   checkAndSendNotification();
 
   // Update display (handles view rotation)
@@ -239,50 +239,78 @@ void checkAndSendNotification() {
   int successCount = 0;
   String feedbackMessage = "";
 
-  // === YELLOW LED NOTIFICATION (Webhook 1 only) ===
+  // === YELLOW LED NOTIFICATION (All users) ===
   if (yellowLEDIsOn && !yellowLEDWasOn) {
-    // Yellow LED just turned on - send to webhook 1 only
+    // Yellow LED just turned on - send to all configured users
     unsigned long timeSinceLastYellowNotification = millis() - lastYellowNotificationTime;
 
     if (timeSinceLastYellowNotification >= TELEGRAM_NOTIFICATION_COOLDOWN || lastYellowNotificationTime == 0) {
       // Build notification message
-      String message = "Fish should go out soon (";
+      String message = String(DOG_NAME) + " should go out soon (";
       message += peeMinutes / 60;
       message += "h ";
       message += peeMinutes % 60;
       message += "m since last pee)";
 
-      // Send to person 1 only (yellow notifications only go to you)
+      int yellowSuccessCount = 0;
+
+      // Send to user 1
       if (strlen(TELEGRAM_BOT_TOKEN_1) > 0 && strlen(TELEGRAM_CHAT_ID_1) > 0) {
-        DEBUG_PRINTLN("Sending yellow alert to person 1...");
+        DEBUG_PRINTLN("Sending yellow alert to user 1...");
         if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, message.c_str())) {
-          successCount++;
-          feedbackMessage = "Yellow Alert Sent";
-          lastYellowNotificationTime = millis();
-          DEBUG_PRINTLN("Yellow notification sent successfully!");
+          yellowSuccessCount++;
+        }
+      }
+
+      // Send to user 2
+      if (strlen(TELEGRAM_BOT_TOKEN_2) > 0 && strlen(TELEGRAM_CHAT_ID_2) > 0) {
+        DEBUG_PRINTLN("Sending yellow alert to user 2...");
+        if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, message.c_str())) {
+          yellowSuccessCount++;
+        }
+      }
+
+      // Send to user 3
+      if (strlen(TELEGRAM_BOT_TOKEN_3) > 0 && strlen(TELEGRAM_CHAT_ID_3) > 0) {
+        DEBUG_PRINTLN("Sending yellow alert to user 3...");
+        if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
+          yellowSuccessCount++;
         }
       }
 
       // Send to Alexa via Notify Me (if configured)
       if (strlen(NOTIFY_ME_ACCESS_CODE) > 0) {
         DEBUG_PRINTLN("Sending yellow alert to Alexa...");
-        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, "Fish should go outside soon.", ALEXA_DEVICE_NAME)) {
+        String alexaMessage = String(DOG_NAME) + " should go outside soon.";
+        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, alexaMessage.c_str(), ALEXA_DEVICE_NAME)) {
           DEBUG_PRINTLN("Alexa yellow notification sent successfully!");
         }
+      }
+
+      // Update status
+      if (yellowSuccessCount > 0) {
+        lastYellowNotificationTime = millis();
+        successCount += yellowSuccessCount;
+        feedbackMessage = "Yellow Alert Sent (";
+        feedbackMessage += yellowSuccessCount;
+        feedbackMessage += ")";
+        DEBUG_PRINT("Yellow notifications sent successfully to ");
+        DEBUG_PRINT(yellowSuccessCount);
+        DEBUG_PRINTLN(" recipient(s)!");
       }
     } else {
       DEBUG_PRINTLN("Yellow notification cooldown active - skipping");
     }
   }
 
-  // === RED LED NOTIFICATION (All webhooks) ===
+  // === RED LED NOTIFICATION (All users) ===
   if (redLEDIsOn && !redLEDWasOn) {
-    // Red LED just turned on - send to all configured webhooks
+    // Red LED just turned on - send to all configured users
     unsigned long timeSinceLastRedNotification = millis() - lastRedNotificationTime;
 
     if (timeSinceLastRedNotification >= TELEGRAM_NOTIFICATION_COOLDOWN || lastRedNotificationTime == 0) {
       // Build notification message
-      String message = "Fish needs to pee NOW! (";
+      String message = String(DOG_NAME) + " needs to pee NOW! (";
       message += peeMinutes / 60;
       message += "h ";
       message += peeMinutes % 60;
@@ -290,25 +318,25 @@ void checkAndSendNotification() {
 
       int redSuccessCount = 0;
 
-      // Send to person 1
+      // Send to user 1
       if (strlen(TELEGRAM_BOT_TOKEN_1) > 0 && strlen(TELEGRAM_CHAT_ID_1) > 0) {
-        DEBUG_PRINTLN("Sending red alert to person 1...");
+        DEBUG_PRINTLN("Sending red alert to user 1...");
         if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, message.c_str())) {
           redSuccessCount++;
         }
       }
 
-      // Send to person 2
+      // Send to user 2
       if (strlen(TELEGRAM_BOT_TOKEN_2) > 0 && strlen(TELEGRAM_CHAT_ID_2) > 0) {
-        DEBUG_PRINTLN("Sending red alert to person 2...");
+        DEBUG_PRINTLN("Sending red alert to user 2...");
         if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, message.c_str())) {
           redSuccessCount++;
         }
       }
 
-      // Send to person 3
+      // Send to user 3
       if (strlen(TELEGRAM_BOT_TOKEN_3) > 0 && strlen(TELEGRAM_CHAT_ID_3) > 0) {
-        DEBUG_PRINTLN("Sending red alert to person 3...");
+        DEBUG_PRINTLN("Sending red alert to user 3...");
         if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
           redSuccessCount++;
         }
@@ -317,7 +345,8 @@ void checkAndSendNotification() {
       // Send to Alexa via Notify Me (if configured)
       if (strlen(NOTIFY_ME_ACCESS_CODE) > 0) {
         DEBUG_PRINTLN("Sending red alert to Alexa...");
-        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, "Fish needs to pee right now!", ALEXA_DEVICE_NAME)) {
+        String alexaMessage = String(DOG_NAME) + " needs to pee right now!";
+        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, alexaMessage.c_str(), ALEXA_DEVICE_NAME)) {
           DEBUG_PRINTLN("Alexa red notification sent successfully!");
         }
       }
@@ -341,30 +370,30 @@ void checkAndSendNotification() {
 
   // === RED LED TURNED OFF (All Clear notification) ===
   if (!redLEDIsOn && redLEDWasOn && redAlertActive) {
-    // Red LED just turned off after being on - send "all clear" to all webhooks
-    String message = "All clear! Fish has peed.";
+    // Red LED just turned off after being on - send "all clear" to all users
+    String message = "All clear! " + String(DOG_NAME) + " has peed.";
 
     int clearSuccessCount = 0;
 
-    // Send to person 1
+    // Send to user 1
     if (strlen(TELEGRAM_BOT_TOKEN_1) > 0 && strlen(TELEGRAM_CHAT_ID_1) > 0) {
-      DEBUG_PRINTLN("Sending all clear to person 1...");
+      DEBUG_PRINTLN("Sending all clear to user 1...");
       if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, message.c_str())) {
         clearSuccessCount++;
       }
     }
 
-    // Send to person 2
+    // Send to user 2
     if (strlen(TELEGRAM_BOT_TOKEN_2) > 0 && strlen(TELEGRAM_CHAT_ID_2) > 0) {
-      DEBUG_PRINTLN("Sending all clear to person 2...");
+      DEBUG_PRINTLN("Sending all clear to user 2...");
       if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, message.c_str())) {
         clearSuccessCount++;
       }
     }
 
-    // Send to person 3
+    // Send to user 3
     if (strlen(TELEGRAM_BOT_TOKEN_3) > 0 && strlen(TELEGRAM_CHAT_ID_3) > 0) {
-      DEBUG_PRINTLN("Sending all clear to person 3...");
+      DEBUG_PRINTLN("Sending all clear to user 3...");
       if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
         clearSuccessCount++;
       }

@@ -294,12 +294,14 @@ dog-potty-tracker/
 ### Setup Process
 
 1. Copy `dog-potty-tracker/secrets.h.example` to `dog-potty-tracker/secrets.h`
-2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials:
+2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials and dog name:
    ```cpp
    const char* WIFI_SSID = "YourNetworkName";
    const char* WIFI_PASSWORD = "YourPassword";
+   const char* DOG_NAME = "Fish";  // Your dog's name (used in notifications)
    ```
-3. `secrets.h` is automatically ignored by `.gitignore`
+3. Optionally configure Telegram bots and Notify Me (Alexa) access codes
+4. `secrets.h` is automatically ignored by `.gitignore`
 
 ### .gitignore Contents
 
@@ -445,7 +447,7 @@ When WiFi is disconnected, timestamp view is not shown since timestamps are unre
 OUT: 2h 15m ago   -> Simple text labels
 PEE: 0h 45m ago   -> No emojis/icons
 POO: 1h 30m ago   -> Yellow section (top 16px)
-[3:45 PM]         -> Current time, Blue section (bottom 48px)
+3:45 PM           -> Current time, Blue section (bottom 48px)
 
 ```
 
@@ -455,7 +457,7 @@ POO: 1h 30m ago   -> Yellow section (top 16px)
 OUT: 1:30 PM      -> Actual time of event
 PEE: 3:00 PM      -> Requires NTP sync
 POO: 2:15 PM      -> Yellow section (top 16px)
-[3:45 PM]         -> Current time, Blue section (bottom 48px)
+3:45 PM           -> Current time, Blue section (bottom 48px)
 
 ```
 
@@ -1176,7 +1178,7 @@ void scanI2C() {
 
 **WiFi Data Logging:**
 - Log events to ThingSpeak for historical tracking
-- Export data to Google Sheets via IFTTT webhook
+- Export data to Google Sheets via custom webhook
 - Local CSV file storage on SPIFFS filesystem
 - View trends and patterns over time
 
@@ -1197,7 +1199,7 @@ void scanI2C() {
 - Buzzer for audio alerts when timer exceeds threshold
 - Configurable alert schedules
 - Smart alerts based on learned patterns
-- IFTTT/Webhooks for phone notifications
+- Additional notification providers (SMS, email, etc.)
 
 **Better Time Display:**
 - Show day of week (Mon, Tue, etc.)

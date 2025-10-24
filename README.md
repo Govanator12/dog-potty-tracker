@@ -7,11 +7,95 @@ A hardware device to track your dog's potty activities with three independent ti
 - **3 Independent Timers**: Track time since last Outside, Pee, and Poop events
 - **OLED Display**: 0.96" display with auto-rotating views (elapsed time and timestamps)
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
-- **WiFi & NTP Sync**: Automatic time synchronization for accurate timestamps
-- **IFTTT Notifications**: Push notifications and Alexa announcements when dog needs to go out
+- **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
+- **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
+- **Alexa Announcements**: Spoken announcements on specific Echo device via Notify Me skill
 - **Night Mode**: Auto sleep 11pm-5am to save power
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
-- **Long-press Reset**: Hold button for 3 seconds to reset individual timers
+- **Configurable Dog Name**: Personalize notifications with your dog's name
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph "Hardware Layer"
+        OLED[OLED Display<br/>SSD1306 128x64]
+        BTN1[Outside Button<br/>D5]
+        BTN2[Pee Button<br/>D6]
+        BTN3[Poop Button<br/>D7]
+        LED1[Green LED<br/>D0]
+        LED2[Yellow LED<br/>D3]
+        LED3[Red LED<br/>D8]
+        ESP[WeMos D1 Mini<br/>ESP8266]
+    end
+
+    subgraph "Core Application"
+        MAIN[Main Loop<br/>dog-potty-tracker.ino]
+
+        subgraph "Managers"
+            TIMER[TimerManager<br/>Track 3 timers]
+            DISPLAY[DisplayManager<br/>Render views]
+            BUTTON[ButtonHandler<br/>Debounce & events]
+            LEDCTL[LEDController<br/>Status logic]
+            WIFI[WiFiManager<br/>WiFi & NTP & Notifications]
+            STORAGE[Storage<br/>EEPROM persistence]
+        end
+    end
+
+    subgraph "External Services"
+        NTP[NTP Servers<br/>pool.ntp.org]
+        TELEGRAM[Telegram API<br/>Bot messages]
+        ALEXA[Notify Me API<br/>Alexa announcements]
+    end
+
+    subgraph "Configuration"
+        CONFIG[config.h<br/>Pin mappings & thresholds]
+        SECRETS[secrets.h<br/>WiFi & API credentials & dog name]
+    end
+
+    %% Hardware connections
+    BTN1 --> BUTTON
+    BTN2 --> BUTTON
+    BTN3 --> BUTTON
+    LEDCTL --> LED1
+    LEDCTL --> LED2
+    LEDCTL --> LED3
+    DISPLAY --> OLED
+
+    %% Main loop connections
+    MAIN --> TIMER
+    MAIN --> DISPLAY
+    MAIN --> BUTTON
+    MAIN --> LEDCTL
+    MAIN --> WIFI
+    MAIN --> STORAGE
+
+    %% Manager interactions
+    BUTTON --> TIMER
+    TIMER --> DISPLAY
+    TIMER --> LEDCTL
+    TIMER --> STORAGE
+    WIFI --> DISPLAY
+    WIFI --> NTP
+    WIFI --> TELEGRAM
+    WIFI --> ALEXA
+
+    %% Configuration
+    CONFIG -.-> MAIN
+    SECRETS -.-> WIFI
+    SECRETS -.-> MAIN
+
+    %% Styling
+    classDef hardware fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef manager fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef external fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef config fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+
+    class OLED,BTN1,BTN2,BTN3,LED1,LED2,LED3,ESP hardware
+    class TIMER,DISPLAY,BUTTON,LEDCTL,WIFI,STORAGE manager
+    class NTP,TELEGRAM,ALEXA external
+    class CONFIG,SECRETS config
+```
 
 ## Hardware Required
 
@@ -77,13 +161,14 @@ Open Tools -> Manage Libraries and install:
 - **Time** (by Michael Margolis)
 - **EEPROM** (built-in)
 
-### 4. Configure WiFi Credentials
+### 4. Configure WiFi Credentials and Dog Name
 
 1. Copy `dog-potty-tracker/secrets.h.example` to `dog-potty-tracker/secrets.h`
-2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials:
+2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials and dog's name:
    ```cpp
    const char* WIFI_SSID = "YourNetworkName";
    const char* WIFI_PASSWORD = "YourPassword";
+   const char* DOG_NAME = "Fish";  // Your dog's name (used in notifications)
    ```
 3. Save the file (this file is ignored by git for security)
 
@@ -112,17 +197,17 @@ Telegram is completely free and provides instant push notifications to your phon
 1. Copy `dog-potty-tracker/secrets.h.example` to `dog-potty-tracker/secrets.h` (if not already done)
 2. Edit `dog-potty-tracker/secrets.h` and add your bot token and chat ID:
    ```cpp
-   // Person 1 (You)
+   // User 1
    const char* TELEGRAM_BOT_TOKEN_1 = "123456789:ABCdefGHIjklMNOpqrsTUVwxyz";
    const char* TELEGRAM_CHAT_ID_1 = "123456789";
 
-   // Person 2 (Girlfriend) - optional
-   const char* TELEGRAM_BOT_TOKEN_2 = "";  // Her bot token
-   const char* TELEGRAM_CHAT_ID_2 = "";    // Her chat ID
+   // User 2 (optional)
+   const char* TELEGRAM_BOT_TOKEN_2 = "";  // User 2 bot token
+   const char* TELEGRAM_CHAT_ID_2 = "";    // User 2 chat ID
 
-   // Person 3 (Optional)
-   const char* TELEGRAM_BOT_TOKEN_3 = "";
-   const char* TELEGRAM_CHAT_ID_3 = "";
+   // User 3 (optional)
+   const char* TELEGRAM_BOT_TOKEN_3 = "";  // User 3 bot token
+   const char* TELEGRAM_CHAT_ID_3 = "";    // User 3 chat ID
    ```
 3. Save the file
 
@@ -131,45 +216,46 @@ Telegram is completely free and provides instant push notifications to your phon
 - Each person gets their own bot token and chat ID
 - Add each person's credentials to `secrets.h`
 - Leave token and chat ID blank (`""`) to disable notifications for that slot
+- **All users receive the same notifications** (both yellow warnings and red urgent alerts)
 
 **Example:**
-- You: Create bot "Dog Tracker 1" → Get token & chat ID → Add as `TELEGRAM_BOT_TOKEN_1` and `TELEGRAM_CHAT_ID_1`
-- Girlfriend: Create bot "Dog Tracker 2" → Get token & chat ID → Add as `TELEGRAM_BOT_TOKEN_2` and `TELEGRAM_CHAT_ID_2`
-- Both of you will receive Telegram messages!
+- User 1: Create bot "Dog Tracker 1" → Get token & chat ID → Add as `TELEGRAM_BOT_TOKEN_1` and `TELEGRAM_CHAT_ID_1`
+- User 2: Create bot "Dog Tracker 2" → Get token & chat ID → Add as `TELEGRAM_BOT_TOKEN_2` and `TELEGRAM_CHAT_ID_2`
+- All users will receive identical notifications!
 
 **Notification Behavior:**
 
-The device sends different notifications based on LED status:
+The device sends notifications based on LED status (using your dog's name from DOG_NAME):
 
-1. **Yellow LED turns on (90 minutes)** - Webhook 1 only:
-   - Message: "Dog should go out soon (Xh Ym since last pee)"
-   - Only YOU receive this notification (not girlfriend or webhook 3)
+1. **Yellow LED turns on (90 minutes)** - All users:
+   - Message: "{DOG_NAME} should go out soon (Xh Ym since last pee)"
+   - Example: "Fish should go out soon (1h 30m since last pee)"
    - 1-hour cooldown between yellow notifications
 
-2. **Red LED turns on (3 hours)** - All webhooks:
-   - Message: "Dog needs to pee NOW! (Xh Ym since last pee)"
-   - Everyone receives this notification
+2. **Red LED turns on (3 hours)** - All users:
+   - Message: "{DOG_NAME} needs to pee NOW! (Xh Ym since last pee)"
+   - Example: "Fish needs to pee NOW! (3h 15m since last pee)"
    - 1-hour cooldown between red notifications
 
-3. **Red LED turns off (dog peed)** - All webhooks:
-   - Message: "All clear! Dog has peed."
+3. **Red LED turns off (dog peed)** - All users:
+   - Message: "All clear! {DOG_NAME} has peed."
+   - Example: "All clear! Fish has peed."
    - Only sent when you press the Pee button while red LED is on
-   - Everyone receives this notification
 
 **Quiet Hours:**
 - No notifications are sent between 10pm and 7am
 - Timers and device continue working normally
 
 **Display Feedback:**
-- "Yellow Alert Sent" - Yellow notification sent to person 1
-- "Red Alert Sent (2)" - Red notification sent to 2 people
-- "All Clear Sent (2)" - All clear notification sent to 2 people
+- "Yellow Alert Sent (2)" - Yellow notification sent to 2 users
+- "Red Alert Sent (3)" - Red notification sent to 3 users
+- "All Clear Sent (2)" - All clear notification sent to 2 users
 
 ### 6. Configure Alexa Announcements with Notify Me (Optional - Free!)
 
 **Note:** Alexa announcements are separate from Telegram. You can use both together or just one.
 
-The Notify Me skill is completely free and lets Alexa make voice announcements. Unlike Telegram, Alexa will announce yellow and red alerts but NOT "all clear" messages (so Alexa won't announce when the dog has peed).
+The Notify Me skill is completely free and lets Alexa make **spoken voice announcements** that play immediately on your Echo device. Your Echo will speak the message out loud without needing to ask "what are my notifications?"
 
 #### Step 1: Enable Notify Me Skill
 1. Open the Alexa app on your phone
@@ -183,28 +269,33 @@ The Notify Me skill is completely free and lets Alexa make voice announcements. 
 2. Alexa will introduce itself and send your access code to your email
 3. Check your email for the access code (looks like `nmac.XXXXX`)
 
-#### Step 3: Add Access Code to secrets.h
+#### Step 3: Add Access Code and Device Name to secrets.h
 1. Edit `dog-potty-tracker/secrets.h`
-2. Add your Notify Me access code:
+2. Add your Notify Me access code and optionally specify which Echo device:
    ```cpp
    // Notify Me (Alexa) Configuration
    const char* NOTIFY_ME_ACCESS_CODE = "nmac.XXXXX";
+   const char* ALEXA_DEVICE_NAME = "Kitchen Echo";  // Specific device, or "" for all devices
    ```
 3. Save the file
 
 **How it works:**
-- Yellow LED turns on → Alexa announces: "The dog should go outside soon"
-- Red LED turns on → Alexa announces: "The dog needs to pee right now!"
+- Yellow LED turns on → Alexa announces: "{DOG_NAME} should go outside soon."
+  - Example: "Fish should go outside soon."
+- Red LED turns on → Alexa announces: "{DOG_NAME} needs to pee right now!"
+  - Example: "Fish needs to pee right now!"
 - Red LED turns off → Alexa stays silent (only Telegram notification sent)
 - Quiet hours (10pm-7am): No Alexa announcements
+- Announcements play **immediately** - no need to ask Alexa anything
 
-**How to hear notifications:**
-- When your Echo device chimes and the light ring turns yellow, say **"Alexa, what are my notifications?"**
-- Alexa will read your notifications out loud
+**Device Targeting:**
+- Specify `ALEXA_DEVICE_NAME` to announce on only one specific Echo device (e.g., "Kitchen Echo", "Living Room")
+- Leave blank (`""`) to announce on all Echo devices in your home
+- Device name must match exactly as shown in your Alexa app
 
 **Limitations:**
-- Amazon limits notifications to 5 per 5-minute period
-- This is plenty for the dog potty tracker (1-hour cooldown between alerts)
+- Amazon limits announcements to a reasonable rate
+- The 1-hour cooldown between alerts is well within limits
 
 ### 7. Install USB Driver (if needed)
 
@@ -290,7 +381,7 @@ LEDs are based on the **Pee timer only**:
 OUT: 2h 15m ago
 PEE: 0h 45m ago
 POO: 1h 30m ago
-[3:45 PM]
+3:45 PM
 ```
 
 **View B - Timestamps** (5 seconds)
@@ -298,7 +389,7 @@ POO: 1h 30m ago
 OUT: 1:30 PM
 PEE: 3:00 PM
 POO: 2:15 PM
-[3:45 PM]
+3:45 PM
 ```
 
 ## Troubleshooting
