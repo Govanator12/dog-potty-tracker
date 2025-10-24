@@ -200,14 +200,19 @@ void DisplayManager::showFeedback(const char* message, unsigned long duration) {
 }
 
 void DisplayManager::setNightMode(bool enabled) {
-  nightMode = enabled;
-  if (enabled && displayOn) {
-    display.ssd1306_command(SSD1306_DISPLAYOFF);
-    DEBUG_PRINTLN("Display: Night mode ON");
-  } else if (!enabled && !displayOn) {
-    display.ssd1306_command(SSD1306_DISPLAYON);
-    displayOn = true;
-    DEBUG_PRINTLN("Display: Night mode OFF");
+  // Only change state and log if actually changing
+  if (nightMode != enabled) {
+    nightMode = enabled;
+    if (enabled && displayOn) {
+      display.ssd1306_command(SSD1306_DISPLAYOFF);
+      DEBUG_PRINTLN("Display: Night mode ON");
+    } else if (!enabled && !displayOn) {
+      display.ssd1306_command(SSD1306_DISPLAYON);
+      displayOn = true;
+      DEBUG_PRINTLN("Display: Night mode OFF");
+    }
+  } else {
+    nightMode = enabled;
   }
 }
 

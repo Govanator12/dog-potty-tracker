@@ -74,15 +74,20 @@ uint8_t LEDController::getPin(LED led) {
 }
 
 void LEDController::setNightMode(bool enabled) {
-  nightMode = enabled;
-  if (enabled) {
-    // Turn all LEDs off
-    setLED(LED_GREEN_STATUS, LOW);
-    setLED(LED_YELLOW_STATUS, LOW);
-    setLED(LED_RED_STATUS, LOW);
-    DEBUG_PRINTLN("LEDController: Night mode ON");
+  // Only log if state is actually changing
+  if (nightMode != enabled) {
+    nightMode = enabled;
+    if (enabled) {
+      // Turn all LEDs off
+      setLED(LED_GREEN_STATUS, LOW);
+      setLED(LED_YELLOW_STATUS, LOW);
+      setLED(LED_RED_STATUS, LOW);
+      DEBUG_PRINTLN("LEDController: Night mode ON");
+    } else {
+      DEBUG_PRINTLN("LEDController: Night mode OFF");
+    }
   } else {
-    DEBUG_PRINTLN("LEDController: Night mode OFF");
+    nightMode = enabled;
   }
 }
 

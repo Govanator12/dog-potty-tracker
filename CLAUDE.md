@@ -204,8 +204,8 @@ Install via Arduino IDE -> Tools -> Manage Libraries:
 
 ```
 dog-potty-tracker/
- src/
-    main.ino              # Main Arduino sketch with setup() and loop()
+  dog-potty-tracker/
+    dog-potty-tracker.ino # Main Arduino sketch with setup() and loop()
     config.h              # Pin definitions and constants
     secrets.h             # WiFi credentials (NOT in git)
     secrets.h.example     # Template for WiFi setup (committed)
@@ -221,20 +221,18 @@ dog-potty-tracker/
     LEDController.cpp
     Storage.h             # EEPROM persistence
     Storage.cpp
- docs/
-    wiring.md             # Detailed wiring diagrams
-    troubleshooting.md    # Common issues and solutions
- .gitignore                # Excludes secrets.h
- README.md                 # Project documentation
- CLAUDE.md                 # This file
+  .gitignore              # Excludes secrets.h and .claude/
+  README.md               # Project documentation
+  CLAUDE.md               # This file
+  LICENSE                 # Project license
 ```
 
 ## WiFi Configuration
 
 ### Setup Process
 
-1. Copy `src/secrets.h.example` to `src/secrets.h`
-2. Edit `src/secrets.h` with your WiFi credentials:
+1. Copy `dog-potty-tracker/secrets.h.example` to `dog-potty-tracker/secrets.h`
+2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials:
    ```cpp
    const char* WIFI_SSID = "YourNetworkName";
    const char* WIFI_PASSWORD = "YourPassword";
@@ -244,7 +242,8 @@ dog-potty-tracker/
 ### .gitignore Contents
 
 ```
-src/secrets.h
+dog-potty-tracker/secrets.h
+.claude/
 *.swp
 *.swo
 .DS_Store

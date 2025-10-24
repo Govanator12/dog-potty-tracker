@@ -1,5 +1,5 @@
 # WiFi credentials (contains sensitive information)
-src/secrets.h
+dog-potty-tracker/secrets.h
 
 # Temporary files
 *.swp

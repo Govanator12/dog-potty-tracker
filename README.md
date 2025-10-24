@@ -78,8 +78,8 @@ Open Tools -> Manage Libraries and install:
 
 ### 4. Configure WiFi Credentials
 
-1. Copy `src/secrets.h.example` to `src/secrets.h`
-2. Edit `src/secrets.h` with your WiFi credentials:
+1. Copy `dog-potty-tracker/secrets.h.example` to `dog-potty-tracker/secrets.h`
+2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials:
    ```cpp
    const char* WIFI_SSID = "YourNetworkName";
    const char* WIFI_PASSWORD = "YourPassword";
@@ -107,7 +107,7 @@ If your computer doesn't recognize the WeMos D1 Mini:
    - Port: Select the COM port where D1 Mini is connected
 
 3. **Open the sketch**:
-   - File -> Open -> `src/main.ino`
+   - File -> Open -> `dog-potty-tracker/dog-potty-tracker.ino`
 
 4. **Verify/Compile**:
    - Click the checkmark icon or Sketch -> Verify/Compile
