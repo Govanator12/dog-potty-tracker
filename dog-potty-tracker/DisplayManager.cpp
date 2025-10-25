@@ -9,7 +9,8 @@ DisplayManager::DisplayManager() :
   nightMode(false),
   displayOn(true),
   displayMode(2),  // Default to cycle mode
-  cycleInterval(5000)  // Default to 5 seconds
+  cycleInterval(5000),  // Default to 5 seconds
+  currentTimer(0)  // Start with first timer (Outside)
 {
 }
 
@@ -106,8 +107,11 @@ void DisplayManager::update(TimerManager* timerManager, bool timeSynced) {
   // Rotate view every VIEW_ROTATION_INTERVAL
   rotateView(timeSynced);
 
-  // Render current view
-  if (currentView == VIEW_ELAPSED || !timeSynced) {
+  // Render current view based on display mode
+  if (displayMode == 3) {
+    // Mode 3: Show single timer with large text
+    renderSingleTimerView(timerManager, currentTimer);
+  } else if (currentView == VIEW_ELAPSED || !timeSynced) {
     renderElapsedView(timerManager);
   } else {
     renderTimestampView(timerManager);
@@ -125,6 +129,15 @@ void DisplayManager::rotateView(bool timeSynced) {
       currentView = VIEW_ELAPSED;  // Fall back to elapsed if no time sync
     } else {
       currentView = VIEW_TIMESTAMP;
+    }
+    return;
+  } else if (displayMode == 3) {
+    // Mode 3: Rotate through individual timers
+    if (millis() - lastViewSwitch >= cycleInterval) {
+      currentTimer = (currentTimer + 1) % 3;  // Cycle through 0, 1, 2 (Outside, Pee, Poop)
+      lastViewSwitch = millis();
+      DEBUG_PRINT("Timer switched to: ");
+      DEBUG_PRINTLN(currentTimer == 0 ? "OUTSIDE" : (currentTimer == 1 ? "PEE" : "POOP"));
     }
     return;
   }
@@ -195,6 +208,52 @@ void DisplayManager::renderTimestampView(TimerManager* timerManager) {
   // Line 4: Current time
   display.setCursor(0, 48);
   display.print(getCurrentTimeString());
+
+  display.display();
+}
+
+void DisplayManager::renderSingleTimerView(TimerManager* timerManager, int timerIndex) {
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+
+  // Determine which timer to show
+  Timer timer;
+  const char* label;
+
+  switch(timerIndex) {
+    case 0:
+      timer = TIMER_OUTSIDE;
+      label = "OUTSIDE";
+      break;
+    case 1:
+      timer = TIMER_PEE;
+      label = "PEE";
+      break;
+    case 2:
+      timer = TIMER_POOP;
+      label = "POOP";
+      break;
+    default:
+      timer = TIMER_OUTSIDE;
+      label = "OUTSIDE";
+      break;
+  }
+
+  // Line 1: Timer label (large text)
+  display.setTextSize(2);
+  display.setCursor(0, 0);
+  display.print(label);
+
+  // Line 2: Elapsed time (large text)
+  display.setTextSize(2);
+  display.setCursor(0, 20);
+  display.print(timerManager->getElapsedFormatted(timer));
+
+  // Line 3: Timestamp (medium text)
+  display.setTextSize(1);
+  display.setCursor(0, 48);
+  display.print("At: ");
+  display.print(timerManager->getTimestampFormatted(timer));
 
   display.display();
 }

@@ -9,6 +9,7 @@ A hardware device to track your dog's potty activities with three independent ti
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
 - **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
 - **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
+- **Remote Commands**: Control timers remotely via Telegram (/pee, /poo, /out, /status)
 - **Night Mode**: Configurable quiet hours that turn off display, LEDs, and suppress notifications
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
 - **Configurable Dog Name**: Personalize notifications with your dog's name
@@ -188,7 +189,7 @@ The display can operate in three different modes, configured in `secrets.h`:
 1. Edit `dog-potty-tracker/secrets.h` and set the display mode:
    ```cpp
    // Display Mode Configuration
-   const int DISPLAY_MODE = 2;  // 0 = elapsed only, 1 = timestamps only, 2 = cycle
+   const int DISPLAY_MODE = 2;  // 0 = elapsed only, 1 = timestamps only, 2 = cycle, 3 = large rotating
    const int DISPLAY_CYCLE_SECONDS = 5;  // Seconds between view changes when in cycle mode
    ```
 
@@ -214,10 +215,31 @@ The display can operate in three different modes, configured in `secrets.h`:
   - Best of both worlds - see both elapsed time and actual timestamps
   - Configurable rotation interval via `DISPLAY_CYCLE_SECONDS` (default: 5 seconds)
 
+- **Mode 3 (Large Rotating)**: Display rotates through each timer individually with LARGE text (easier to read from distance)
+  - Shows one timer at a time with bigger letters
+  - Each timer displays: timer name, elapsed time, and timestamp
+  - Example (rotates every X seconds):
+  ```
+  OUTSIDE          <- Large text (2x size)
+  2h 15m ago       <- Large text (2x size)
+  At: 1:30 PM      <- Normal text
+  ```
+  ```
+  PEE              <- Large text (2x size)
+  0h 45m ago       <- Large text (2x size)
+  At: 3:00 PM      <- Normal text
+  ```
+  ```
+  POOP             <- Large text (2x size)
+  1h 30m ago       <- Large text (2x size)
+  At: 2:15 PM      <- Normal text
+  ```
+
 **When to use each mode:**
 - **Mode 0**: Prefer seeing "how long ago" (e.g., "2h 15m ago")
 - **Mode 1**: Prefer seeing "what time" (e.g., "1:30 PM")
 - **Mode 2**: Want to see both - display switches automatically
+- **Mode 3**: Need larger text for easier reading from across the room
 
 ### 6. Configure Telegram Notifications (Optional - Free!)
 
@@ -296,7 +318,49 @@ The device sends notifications based on LED status (using your dog's name from D
 **Display Feedback:**
 - "Yellow Alert Sent (2)" - Yellow notification sent to 2 users
 - "Red Alert Sent (3)" - Red notification sent to 3 users
-- "All Clear Sent (2)" - All clear notification sent to 2 users
+
+#### Remote Commands via Telegram
+
+You can remotely control the timers by sending commands to your Telegram bot! This is perfect when someone else takes the dog out, or when you're away from the device.
+
+**Available Commands:**
+- `/pee` - Reset the pee timer remotely
+- `/poo` or `/poop` - Reset the poop timer remotely
+- `/out` or `/outside` - Reset the outside timer remotely
+- `/status` - Get current status of all timers
+
+**How It Works:**
+1. Open your Telegram chat with your bot
+2. Send any command (e.g., `/pee`)
+3. The device receives the command within ~1 second
+4. Timer is reset and saved to EEPROM
+5. Display shows "Pee! (Remote)" for confirmation
+6. Bot sends you a confirmation reply: "Pee timer reset!"
+
+**Status Command Example:**
+
+Send `/status` to get:
+```
+Fish Status:
+Outside: 2h 15m ago
+Pee: 0h 45m ago
+Poop: 1h 30m ago
+
+Last times:
+Outside: 1:30 PM
+Pee: 4:00 PM
+Poop: 3:15 PM
+```
+
+**Security:**
+- Only messages from authorized Chat IDs (configured in secrets.h) are processed
+- Each user can only control the device through their own bot
+- Unauthorized messages are automatically ignored
+
+**Use Cases:**
+- Someone else takes the dog out and you want to update timers from your phone
+- You're at work and want to check if the dog needs to go out
+- Quick timer updates without physically pressing buttons
 
 ### 7. Install USB Driver (if needed)
 

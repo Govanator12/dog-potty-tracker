@@ -53,6 +53,7 @@ void handleNightMode();
 void saveToEEPROM();
 void checkAndSendNotification();
 void sendStartupNotification();
+void handleTelegramCommand(String chatId, String command);
 
 void setup() {
   // Initialize serial for debugging
@@ -101,6 +102,9 @@ void setup() {
   // Start WiFi connection (non-blocking)
   wifiManager.begin(WIFI_SSID, WIFI_PASSWORD);
 
+  // Set up Telegram command handler
+  wifiManager.setTelegramCommandCallback(handleTelegramCommand);
+
   DEBUG_PRINTLN("\nSetup complete!\n");
 }
 
@@ -109,6 +113,11 @@ void loop() {
 
   // Update WiFi (handles reconnection)
   wifiManager.update();
+
+  // Poll for incoming Telegram commands
+  wifiManager.pollTelegramMessages(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1,
+                                   TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2,
+                                   TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3);
 
   // Send startup notification once WiFi and time are ready
   if (!startupNotificationSent && wifiManager.isConnected() && wifiManager.isTimeSynced()) {
@@ -473,5 +482,95 @@ void sendStartupNotification() {
     DEBUG_PRINTLN(" recipient(s)!");
   } else {
     DEBUG_PRINTLN("No notification recipients configured");
+  }
+}
+
+void handleTelegramCommand(String chatId, String command) {
+  DEBUG_PRINT("Handling Telegram command from ");
+  DEBUG_PRINT(chatId);
+  DEBUG_PRINT(": ");
+  DEBUG_PRINTLN(command);
+
+  // Convert command to lowercase for case-insensitive matching
+  command.toLowerCase();
+
+  // Remove any bot username suffix (e.g., /pee@yourbot -> /pee)
+  int atPos = command.indexOf('@');
+  if (atPos > 0) {
+    command = command.substring(0, atPos);
+  }
+
+  String response = "";
+  bool commandRecognized = false;
+
+  // Handle commands
+  if (command == "/pee") {
+    timerManager.resetPee();
+    displayManager.showFeedback("Pee! (Remote)", 1500);
+    saveToEEPROM();
+    response = "Pee timer reset!";
+    commandRecognized = true;
+    DEBUG_PRINTLN("Remote pee command executed");
+  }
+  else if (command == "/poo" || command == "/poop") {
+    timerManager.resetPoop();
+    displayManager.showFeedback("Poop! (Remote)", 1500);
+    saveToEEPROM();
+    response = "Poop timer reset!";
+    commandRecognized = true;
+    DEBUG_PRINTLN("Remote poop command executed");
+  }
+  else if (command == "/out" || command == "/outside") {
+    timerManager.resetOutside();
+    displayManager.showFeedback("Outside! (Remote)", 1500);
+    saveToEEPROM();
+    response = "Outside timer reset!";
+    commandRecognized = true;
+    DEBUG_PRINTLN("Remote outside command executed");
+  }
+  else if (command == "/status") {
+    // Build status message with current timer values
+    response = String(DOG_NAME) + " Status:\n";
+    response += "Outside: " + timerManager.getElapsedFormatted(TIMER_OUTSIDE) + "\n";
+    response += "Pee: " + timerManager.getElapsedFormatted(TIMER_PEE) + "\n";
+    response += "Poop: " + timerManager.getElapsedFormatted(TIMER_POOP);
+
+    // Add timestamp info if time is synced
+    if (wifiManager.isTimeSynced()) {
+      response += "\n\nLast times:\n";
+      response += "Outside: " + timerManager.getTimestampFormatted(TIMER_OUTSIDE) + "\n";
+      response += "Pee: " + timerManager.getTimestampFormatted(TIMER_PEE) + "\n";
+      response += "Poop: " + timerManager.getTimestampFormatted(TIMER_POOP);
+    }
+
+    commandRecognized = true;
+    DEBUG_PRINTLN("Status request processed");
+  }
+  else {
+    response = "Unknown command. Available commands:\n/pee - Reset pee timer\n/poo - Reset poop timer\n/out - Reset outside timer\n/status - Get current status";
+    DEBUG_PRINTLN("Unknown command received");
+  }
+
+  // Send confirmation reply back to the user
+  // Determine which bot token to use based on chatId
+  const char* botToken = nullptr;
+  const char* chatIdStr = chatId.c_str();
+
+  if (strcmp(chatIdStr, TELEGRAM_CHAT_ID_1) == 0) {
+    botToken = TELEGRAM_BOT_TOKEN_1;
+  } else if (strcmp(chatIdStr, TELEGRAM_CHAT_ID_2) == 0) {
+    botToken = TELEGRAM_BOT_TOKEN_2;
+  } else if (strcmp(chatIdStr, TELEGRAM_CHAT_ID_3) == 0) {
+    botToken = TELEGRAM_BOT_TOKEN_3;
+  }
+
+  if (botToken != nullptr && strlen(botToken) > 0) {
+    if (wifiManager.sendTelegramNotification(botToken, chatIdStr, response.c_str())) {
+      DEBUG_PRINTLN("Confirmation reply sent successfully");
+    } else {
+      DEBUG_PRINTLN("Failed to send confirmation reply");
+    }
+  } else {
+    DEBUG_PRINTLN("ERROR: Could not determine bot token for reply");
   }
 }

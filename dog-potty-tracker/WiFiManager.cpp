@@ -4,8 +4,14 @@ WiFiManager::WiFiManager() :
   timeSynced(false),
   nextReconnectAttempt(0),
   reconnectAttemptCount(0),
-  connecting(false)
+  connecting(false),
+  commandCallback(nullptr),
+  lastTelegramCheck(0),
+  telegramCheckInterval(1000)  // Check every 1 second
 {
+  updateOffsets[0] = 0;
+  updateOffsets[1] = 0;
+  updateOffsets[2] = 0;
 }
 
 void WiFiManager::begin(const char* ssid, const char* password) {
@@ -251,4 +257,124 @@ String WiFiManager::urlencode(const char* str) {
     }
   }
   return encoded;
+}
+
+// Set callback for handling Telegram commands
+void WiFiManager::setTelegramCommandCallback(TelegramCommandCallback callback) {
+  commandCallback = callback;
+}
+
+// Poll for incoming Telegram messages
+void WiFiManager::pollTelegramMessages(const char* botToken1, const char* chatID1,
+                                       const char* botToken2, const char* chatID2,
+                                       const char* botToken3, const char* chatID3) {
+  // Only poll if connected to WiFi
+  if (!isConnected()) {
+    return;
+  }
+
+  // Rate limit checks to once per second
+  unsigned long now = millis();
+  if (now - lastTelegramCheck < telegramCheckInterval) {
+    return;
+  }
+  lastTelegramCheck = now;
+
+  // Poll each configured bot for messages
+  if (botToken1 != nullptr && strlen(botToken1) > 0 && chatID1 != nullptr && strlen(chatID1) > 0) {
+    checkBotForMessages(botToken1, chatID1, 0);
+  }
+
+  if (botToken2 != nullptr && strlen(botToken2) > 0 && chatID2 != nullptr && strlen(chatID2) > 0) {
+    checkBotForMessages(botToken2, chatID2, 1);
+  }
+
+  if (botToken3 != nullptr && strlen(botToken3) > 0 && chatID3 != nullptr && strlen(chatID3) > 0) {
+    checkBotForMessages(botToken3, chatID3, 2);
+  }
+}
+
+// Helper function to check a specific bot for messages
+void WiFiManager::checkBotForMessages(const char* botToken, const char* chatID, int botIndex) {
+  WiFiClientSecure client;
+  client.setInsecure();  // Skip certificate validation
+
+  HTTPClient http;
+
+  // Build Telegram API URL to get updates
+  // Use long polling with offset to only get new messages
+  String url = "https://api.telegram.org/bot";
+  url += botToken;
+  url += "/getUpdates?offset=";
+  url += String(updateOffsets[botIndex]);
+  url += "&timeout=0";  // Don't wait, return immediately
+
+  DEBUG_PRINT("WiFiManager: Checking for Telegram messages (bot ");
+  DEBUG_PRINT(botIndex + 1);
+  DEBUG_PRINTLN(")");
+
+  // Begin HTTP connection
+  http.begin(client, url);
+
+  // Send GET request
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode == 200) {
+    String response = http.getString();
+    DEBUG_PRINTLN("WiFiManager: Got Telegram response");
+
+    // Parse JSON response manually (simple parsing since we only need a few fields)
+    // Look for "update_id", "chat":{"id"}, and "text"
+
+    int updateIdPos = response.indexOf("\"update_id\":");
+    if (updateIdPos > 0) {
+      // Extract update_id
+      int updateIdStart = updateIdPos + 12;  // Length of "update_id":
+      int updateIdEnd = response.indexOf(',', updateIdStart);
+      if (updateIdEnd < 0) updateIdEnd = response.indexOf('}', updateIdStart);
+      String updateIdStr = response.substring(updateIdStart, updateIdEnd);
+      unsigned long newUpdateId = updateIdStr.toInt() + 1;
+
+      // Update offset to avoid processing same message twice
+      if (newUpdateId > updateOffsets[botIndex]) {
+        updateOffsets[botIndex] = newUpdateId;
+
+        // Extract chat ID
+        int chatIdPos = response.indexOf("\"chat\":{\"id\":");
+        if (chatIdPos > 0) {
+          int chatIdStart = chatIdPos + 13;  // Length of "chat":{"id":
+          int chatIdEnd = response.indexOf(',', chatIdStart);
+          if (chatIdEnd < 0) chatIdEnd = response.indexOf('}', chatIdStart);
+          String chatIdStr = response.substring(chatIdStart, chatIdEnd);
+
+          // Only process if message is from the authorized chat ID
+          if (chatIdStr == String(chatID)) {
+            // Extract text/command
+            int textPos = response.indexOf("\"text\":\"");
+            if (textPos > 0) {
+              int textStart = textPos + 8;  // Length of "text":"
+              int textEnd = response.indexOf("\"", textStart);
+              String command = response.substring(textStart, textEnd);
+
+              DEBUG_PRINT("WiFiManager: Received command: ");
+              DEBUG_PRINTLN(command);
+
+              // Call the callback with chat ID and command
+              if (commandCallback != nullptr) {
+                commandCallback(chatIdStr, command);
+              }
+            }
+          } else {
+            DEBUG_PRINTLN("WiFiManager: Message from unauthorized chat ID - ignoring");
+          }
+        }
+      }
+    }
+  } else if (httpResponseCode < 0) {
+    DEBUG_PRINT("WiFiManager: Telegram polling failed (Error: ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+  }
+
+  http.end();
 }

@@ -9,6 +9,9 @@
 #include <time.h>
 #include "config.h"
 
+// Callback type for handling incoming Telegram commands
+typedef void (*TelegramCommandCallback)(String chatId, String command);
+
 class WiFiManager {
 public:
   WiFiManager();
@@ -31,6 +34,14 @@ public:
   // Send Telegram notification
   bool sendTelegramNotification(const char* botToken, const char* chatID, const char* message);
 
+  // Poll for incoming Telegram messages (call in loop)
+  void pollTelegramMessages(const char* botToken1, const char* chatID1,
+                            const char* botToken2, const char* chatID2,
+                            const char* botToken3, const char* chatID3);
+
+  // Set callback for handling Telegram commands
+  void setTelegramCommandCallback(TelegramCommandCallback callback);
+
 private:
   const char* wifiSsid;
   const char* wifiPassword;
@@ -38,6 +49,12 @@ private:
   unsigned long nextReconnectAttempt;
   unsigned int reconnectAttemptCount;
   bool connecting;
+
+  // Telegram command handling
+  TelegramCommandCallback commandCallback;
+  unsigned long lastTelegramCheck;
+  unsigned long telegramCheckInterval;
+  unsigned long updateOffsets[3];  // Track update_id for each bot
 
   // Attempt reconnection to WiFi
   void attemptReconnect();
@@ -53,6 +70,9 @@ private:
 
   // URL encode helper function for Telegram
   String urlencode(const char* str);
+
+  // Check a specific bot for messages
+  void checkBotForMessages(const char* botToken, const char* chatID, int botIndex);
 };
 
 #endif
