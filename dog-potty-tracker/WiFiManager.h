@@ -45,6 +45,9 @@ public:
   // Trigger Voice Monkey device (Alexa routine)
   bool triggerVoiceMonkey(const char* token, const char* device);
 
+  // Mark that a reply is pending (stops polling temporarily)
+  void setReplyPending(bool pending);
+
 private:
   const char* wifiSsid;
   const char* wifiPassword;
@@ -58,6 +61,8 @@ private:
   unsigned long lastTelegramCheck;
   unsigned long telegramCheckInterval;
   unsigned long updateOffsets[3];  // Track update_id for each bot
+  bool replyPending;  // Flag to prevent polling while reply is being sent
+  unsigned long replyPendingSince;  // Time when reply started
 
   // Attempt reconnection to WiFi
   void attemptReconnect();

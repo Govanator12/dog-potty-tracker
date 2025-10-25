@@ -69,15 +69,19 @@ bool DisplayManager::begin() {
   return true;
 }
 
-void DisplayManager::setDisplayMode(int mode, int cycleSeconds) {
+void DisplayManager::setDisplayMode(int mode, float cycleSeconds) {
   displayMode = mode;
-  cycleInterval = cycleSeconds * 1000;  // Convert seconds to milliseconds
+  cycleInterval = (unsigned long)(cycleSeconds * 1000.0);  // Convert seconds to milliseconds
 
   // Set initial view based on mode
   if (displayMode == 0) {
     currentView = VIEW_ELAPSED;
   } else if (displayMode == 1) {
     currentView = VIEW_TIMESTAMP;
+  } else if (displayMode == 3) {
+    // Mode 3: Initialize the timer rotation
+    currentTimer = 0;
+    lastViewSwitch = millis();  // Start the cycle timer now
   }
 
   DEBUG_PRINT("Display mode set to: ");
@@ -239,19 +243,27 @@ void DisplayManager::renderSingleTimerView(TimerManager* timerManager, int timer
       break;
   }
 
-  // Line 1: Timer label (large text)
-  display.setTextSize(2);
+  // Line 1: Timer label (size 1 - keep small so elapsed time can be huge)
+  display.setTextSize(1);
   display.setCursor(0, 0);
   display.print(label);
 
-  // Line 2: Elapsed time (large text)
-  display.setTextSize(2);
-  display.setCursor(0, 20);
-  display.print(timerManager->getElapsedFormatted(timer));
+  // Get elapsed time string and remove " ago" suffix (last 4 characters)
+  String elapsed = timerManager->getElapsedFormatted(timer);
 
-  // Line 3: Timestamp (medium text)
+  // Remove " ago" by truncating the string (remove last 4 characters)
+  if (elapsed.endsWith(" ago")) {
+    elapsed = elapsed.substring(0, elapsed.length() - 4);
+  }
+
+  // Line 2: Elapsed time (size 3 - EXTRA LARGE for easy reading from distance)
+  display.setTextSize(3);
+  display.setCursor(0, 12);
+  display.print(elapsed);
+
+  // Line 3: Timestamp (size 1 - small)
   display.setTextSize(1);
-  display.setCursor(0, 48);
+  display.setCursor(0, 56);
   display.print("At: ");
   display.print(timerManager->getTimestampFormatted(timer));
 

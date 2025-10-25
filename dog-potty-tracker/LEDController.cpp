@@ -96,14 +96,20 @@ void LEDController::test() {
   DEBUG_PRINTLN("LEDController: Testing LEDs...");
 
   // Test each LED sequentially
+  DEBUG_PRINT("Testing GREEN LED on pin ");
+  DEBUG_PRINTLN(PIN_LED_GREEN);
   setLED(LED_GREEN_STATUS, HIGH);
   delay(300);
   setLED(LED_GREEN_STATUS, LOW);
 
+  DEBUG_PRINT("Testing YELLOW LED on pin ");
+  DEBUG_PRINTLN(PIN_LED_YELLOW);
   setLED(LED_YELLOW_STATUS, HIGH);
   delay(300);
   setLED(LED_YELLOW_STATUS, LOW);
 
+  DEBUG_PRINT("Testing RED LED on pin ");
+  DEBUG_PRINTLN(PIN_LED_RED);
   setLED(LED_RED_STATUS, HIGH);
   delay(300);
   setLED(LED_RED_STATUS, LOW);

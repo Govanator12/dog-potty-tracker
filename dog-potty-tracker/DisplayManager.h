@@ -20,7 +20,7 @@ public:
   bool begin();
 
   // Set display mode configuration
-  void setDisplayMode(int mode, int cycleSeconds);
+  void setDisplayMode(int mode, float cycleSeconds);
 
   // Update display (handles view rotation)
   void update(TimerManager* timerManager, bool timeSynced);

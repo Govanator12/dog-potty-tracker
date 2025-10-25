@@ -483,6 +483,8 @@ void sendStartupNotification() {
   if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE_STARTUP) > 0) {
     DEBUG_PRINTLN("Triggering Voice Monkey startup alert...");
     wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE_STARTUP);
+  } else {
+    DEBUG_PRINTLN("Voice Monkey not configured - skipping startup alert");
   }
 
   // Show feedback on display
@@ -514,11 +516,16 @@ void handleTelegramCommand(String chatId, String command) {
     command = command.substring(0, atPos);
   }
 
+  // Remove leading slash if present (accept both "/pee" and "pee")
+  if (command.startsWith("/")) {
+    command = command.substring(1);
+  }
+
   String response = "";
   bool commandRecognized = false;
 
-  // Handle commands
-  if (command == "/pee") {
+  // Handle commands (without slash)
+  if (command == "pee") {
     timerManager.resetPee();
     displayManager.showFeedback("Pee! (Remote)", 1500);
     saveToEEPROM();
@@ -526,7 +533,7 @@ void handleTelegramCommand(String chatId, String command) {
     commandRecognized = true;
     DEBUG_PRINTLN("Remote pee command executed");
   }
-  else if (command == "/poo" || command == "/poop") {
+  else if (command == "poo" || command == "poop") {
     timerManager.resetPoop();
     displayManager.showFeedback("Poop! (Remote)", 1500);
     saveToEEPROM();
@@ -534,7 +541,7 @@ void handleTelegramCommand(String chatId, String command) {
     commandRecognized = true;
     DEBUG_PRINTLN("Remote poop command executed");
   }
-  else if (command == "/out" || command == "/outside") {
+  else if (command == "out" || command == "outside") {
     timerManager.resetOutside();
     displayManager.showFeedback("Outside! (Remote)", 1500);
     saveToEEPROM();
@@ -542,7 +549,7 @@ void handleTelegramCommand(String chatId, String command) {
     commandRecognized = true;
     DEBUG_PRINTLN("Remote outside command executed");
   }
-  else if (command == "/status") {
+  else if (command == "status") {
     // Build status message with current timer values
     response = String(DOG_NAME) + " Status:\n";
     response += "Outside: " + timerManager.getElapsedFormatted(TIMER_OUTSIDE) + "\n";
@@ -560,9 +567,9 @@ void handleTelegramCommand(String chatId, String command) {
     commandRecognized = true;
     DEBUG_PRINTLN("Status request processed");
   }
-  else if (command.startsWith("/setpee ")) {
-    // Format: /setpee 90 (minutes ago)
-    int minutes = command.substring(8).toInt();
+  else if (command.startsWith("setpee ")) {
+    // Format: setpee 90 (minutes ago)
+    int minutes = command.substring(7).toInt();
     if (minutes > 0) {
       time_t now = time(nullptr);
       time_t targetTime = now - (minutes * 60);
@@ -575,12 +582,12 @@ void handleTelegramCommand(String chatId, String command) {
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "Invalid format. Use: /setpee <minutes>\nExample: /setpee 90";
+      response = "Invalid format. Use: setpee <minutes>\nExample: setpee 90";
     }
   }
-  else if (command.startsWith("/setpoo ") || command.startsWith("/setpoop ")) {
-    // Format: /setpoo 120 (minutes ago)
-    int startPos = command.startsWith("/setpoo ") ? 8 : 9;
+  else if (command.startsWith("setpoo ") || command.startsWith("setpoop ")) {
+    // Format: setpoo 120 (minutes ago)
+    int startPos = command.startsWith("setpoo ") ? 7 : 8;
     int minutes = command.substring(startPos).toInt();
     if (minutes > 0) {
       time_t now = time(nullptr);
@@ -594,12 +601,12 @@ void handleTelegramCommand(String chatId, String command) {
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "Invalid format. Use: /setpoo <minutes>\nExample: /setpoo 120";
+      response = "Invalid format. Use: setpoo <minutes>\nExample: setpoo 120";
     }
   }
-  else if (command.startsWith("/setout ") || command.startsWith("/setoutside ")) {
-    // Format: /setout 45 (minutes ago)
-    int startPos = command.startsWith("/setout ") ? 8 : 12;
+  else if (command.startsWith("setout ") || command.startsWith("setoutside ")) {
+    // Format: setout 45 (minutes ago)
+    int startPos = command.startsWith("setout ") ? 7 : 11;
     int minutes = command.substring(startPos).toInt();
     if (minutes > 0) {
       time_t now = time(nullptr);
@@ -613,52 +620,27 @@ void handleTelegramCommand(String chatId, String command) {
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "Invalid format. Use: /setout <minutes>\nExample: /setout 45";
+      response = "Invalid format. Use: setout <minutes>\nExample: setout 45";
     }
   }
-  else if (command == "/help") {
-    // Show help message with all available commands
-    response = String(DOG_NAME) + " Tracker Commands:\n\n";
-    response += "Reset Timers:\n";
-    response += "/pee - Reset pee timer\n";
-    response += "/poo - Reset poop timer\n";
-    response += "/out - Reset outside timer\n\n";
-    response += "Set Timers (minutes ago):\n";
-    response += "/setpee <min> - Set pee timer\n";
-    response += "/setpoo <min> - Set poop timer\n";
-    response += "/setout <min> - Set outside timer\n";
-    response += "Example: /setpee 90\n\n";
-    response += "Info:\n";
-    response += "/status - Get current status\n";
-    response += "/help - Show this help";
-    commandRecognized = true;
-    DEBUG_PRINTLN("Help requested");
-  }
-  else {
-    response = "Unknown command. Send /help for available commands.";
-    DEBUG_PRINTLN("Unknown command received");
-  }
+  // Note: /help command removed - set up commands via @BotFather instead (see secrets.h.example)
+  // This avoids SSL connection failures and provides better UI in Telegram
 
-  // Send confirmation reply back to the user
-  // Determine which bot token to use based on chatId
-  const char* botToken = nullptr;
-  const char* chatIdStr = chatId.c_str();
+  // REPLIES DISABLED: ESP8266 hardware limitation
+  // The ESP8266 has only ~11KB free heap and cannot handle HTTPS polling + replies
+  // Even with 5+ second delays, the SSL/TLS stack remains exhausted (heap doesn't recover)
+  // Commands still execute successfully - verify via:
+  //   1. Display shows "Pee! (Remote)" or similar feedback
+  //   2. Timer values update on screen
+  //   3. EEPROM saves (check serial output)
+  //
+  // Alternative solutions:
+  //   - Upgrade to ESP32 (32KB+ heap, better SSL stack)
+  //   - Raspberry Pi Pico W (much more memory)
+  //   - Disable Telegram polling and only send alerts (no remote commands)
+  //   - Use MQTT instead of HTTPS for bidirectional communication
 
-  if (strcmp(chatIdStr, TELEGRAM_CHAT_ID_1) == 0) {
-    botToken = TELEGRAM_BOT_TOKEN_1;
-  } else if (strcmp(chatIdStr, TELEGRAM_CHAT_ID_2) == 0) {
-    botToken = TELEGRAM_BOT_TOKEN_2;
-  } else if (strcmp(chatIdStr, TELEGRAM_CHAT_ID_3) == 0) {
-    botToken = TELEGRAM_BOT_TOKEN_3;
-  }
-
-  if (botToken != nullptr && strlen(botToken) > 0) {
-    if (wifiManager.sendTelegramNotification(botToken, chatIdStr, response.c_str())) {
-      DEBUG_PRINTLN("Confirmation reply sent successfully");
-    } else {
-      DEBUG_PRINTLN("Failed to send confirmation reply");
-    }
-  } else {
-    DEBUG_PRINTLN("ERROR: Could not determine bot token for reply");
-  }
+  DEBUG_PRINT("Command executed successfully: ");
+  DEBUG_PRINTLN(response);
+  DEBUG_PRINTLN("(Reply disabled - ESP8266 SSL limitation)");
 }

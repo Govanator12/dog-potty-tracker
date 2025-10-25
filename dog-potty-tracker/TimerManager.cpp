@@ -63,7 +63,7 @@ unsigned long TimerManager::getElapsed(Timer timer) {
 
 String TimerManager::formatElapsed(unsigned long seconds) {
   if (seconds < 60) {
-    return "Just now";
+    return "0h 00m ago";  // Use consistent format instead of "Just now"
   }
 
   unsigned long minutes = seconds / 60;

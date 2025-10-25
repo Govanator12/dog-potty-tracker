@@ -7,7 +7,9 @@ WiFiManager::WiFiManager() :
   connecting(false),
   commandCallback(nullptr),
   lastTelegramCheck(0),
-  telegramCheckInterval(1000)  // Check every 1 second
+  telegramCheckInterval(5000),  // Check every 5 seconds (reduced to prevent SSL exhaustion)
+  replyPending(false),
+  replyPendingSince(0)
 {
   updateOffsets[0] = 0;
   updateOffsets[1] = 0;
@@ -133,11 +135,6 @@ bool WiFiManager::sendTelegramNotification(const char* botToken, const char* cha
     return false;
   }
 
-  WiFiClientSecure client;
-  client.setInsecure();  // Skip certificate validation (necessary for ESP8266)
-
-  HTTPClient http;
-
   // Build Telegram API URL
   String url = "https://api.telegram.org/bot";
   url += botToken;
@@ -147,26 +144,58 @@ bool WiFiManager::sendTelegramNotification(const char* botToken, const char* cha
   url += urlencode(message);
 
   DEBUG_PRINTLN("WiFiManager: Sending Telegram notification...");
+  DEBUG_PRINT("WiFiManager: Message length: ");
+  DEBUG_PRINTLN(strlen(message));
+  DEBUG_PRINT("WiFiManager: URL length: ");
+  DEBUG_PRINTLN(url.length());
+  DEBUG_PRINT("WiFiManager: Free heap before: ");
+  DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  // Begin HTTP connection
-  http.begin(client, url);
+  // Single attempt with long delay to allow SSL stack to recover
+  DEBUG_PRINTLN("WiFiManager: Waiting 5 seconds for SSL stack to clear...");
+  delay(5000);
 
-  // Send GET request
-  int httpResponseCode = http.GET();
+  DEBUG_PRINT("WiFiManager: Free heap after delay: ");
+  DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  if (httpResponseCode > 0) {
-    DEBUG_PRINT("WiFiManager: Telegram notification sent successfully (HTTP ");
-    DEBUG_PRINT(httpResponseCode);
-    DEBUG_PRINTLN(")");
+  for (int attempt = 1; attempt <= 1; attempt++) {  // Only 1 attempt
+
+    // Create fresh client for each attempt
+    WiFiClientSecure client;
+    client.setInsecure();
+    client.setTimeout(10000);
+
+    HTTPClient http;
+    http.setTimeout(10000);
+    http.setReuse(false);
+
+    if (!http.begin(client, url)) {
+      DEBUG_PRINTLN("WiFiManager: Failed to begin HTTP connection");
+      client.stop();
+      continue;  // Try again
+    }
+
+    int httpResponseCode = http.GET();
     http.end();
-    return true;
-  } else {
-    DEBUG_PRINT("WiFiManager: Telegram notification failed (Error: ");
-    DEBUG_PRINT(httpResponseCode);
-    DEBUG_PRINTLN(")");
-    http.end();
-    return false;
+    client.stop();
+
+    if (httpResponseCode > 0) {
+      DEBUG_PRINT("WiFiManager: Telegram notification sent successfully (HTTP ");
+      DEBUG_PRINT(httpResponseCode);
+      DEBUG_PRINTLN(")");
+      return true;
+    } else {
+      DEBUG_PRINT("WiFiManager: Attempt ");
+      DEBUG_PRINT(attempt);
+      DEBUG_PRINT(" failed (Error: ");
+      DEBUG_PRINT(httpResponseCode);
+      DEBUG_PRINTLN(")");
+    }
   }
+
+  // All retries failed
+  DEBUG_PRINTLN("WiFiManager: All retry attempts failed");
+  return false;
 }
 
 // Calculate DST offset based on US DST rules
@@ -264,6 +293,17 @@ void WiFiManager::setTelegramCommandCallback(TelegramCommandCallback callback) {
   commandCallback = callback;
 }
 
+// Mark that a reply is pending (prevents polling during reply)
+void WiFiManager::setReplyPending(bool pending) {
+  replyPending = pending;
+  if (pending) {
+    replyPendingSince = millis();
+    DEBUG_PRINTLN("WiFiManager: Reply pending - pausing polling");
+  } else {
+    DEBUG_PRINTLN("WiFiManager: Reply complete - resuming polling");
+  }
+}
+
 // Poll for incoming Telegram messages
 void WiFiManager::pollTelegramMessages(const char* botToken1, const char* chatID1,
                                        const char* botToken2, const char* chatID2,
@@ -273,7 +313,19 @@ void WiFiManager::pollTelegramMessages(const char* botToken1, const char* chatID
     return;
   }
 
-  // Rate limit checks to once per second
+  // Don't poll if a reply is pending (prevents SSL connection exhaustion)
+  if (replyPending) {
+    unsigned long now = millis();
+    // Auto-clear flag after 30 seconds in case something went wrong
+    if (now - replyPendingSince > 30000) {
+      DEBUG_PRINTLN("WiFiManager: Reply timeout - clearing pending flag");
+      replyPending = false;
+    } else {
+      return;  // Skip polling while reply is being sent
+    }
+  }
+
+  // Rate limit checks to every 5 seconds
   unsigned long now = millis();
   if (now - lastTelegramCheck < telegramCheckInterval) {
     return;
@@ -399,13 +451,22 @@ bool WiFiManager::triggerVoiceMonkey(const char* token, const char* device) {
   HTTPClient http;
 
   // Build Voice Monkey API URL with GET parameters
+  // Convert device name to lowercase (Voice Monkey API requires lowercase)
+  String deviceLower = String(device);
+  deviceLower.toLowerCase();
+
   String url = "https://api-v2.voicemonkey.io/trigger?token=";
   url += token;
   url += "&device=";
-  url += device;
+  url += deviceLower;
 
   DEBUG_PRINT("WiFiManager: Triggering Voice Monkey device: ");
-  DEBUG_PRINTLN(device);
+  DEBUG_PRINT(device);
+  DEBUG_PRINT(" (lowercased to: ");
+  DEBUG_PRINT(deviceLower);
+  DEBUG_PRINTLN(")");
+  DEBUG_PRINT("WiFiManager: Full URL: ");
+  DEBUG_PRINTLN(url);
 
   // Begin HTTP connection
   http.begin(client, url);
