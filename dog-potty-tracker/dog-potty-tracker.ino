@@ -284,12 +284,10 @@ void checkAndSendNotification() {
     unsigned long timeSinceLastYellowNotification = millis() - lastYellowNotificationTime;
 
     if (timeSinceLastYellowNotification >= TELEGRAM_NOTIFICATION_COOLDOWN || lastYellowNotificationTime == 0) {
-      // Build notification message
-      String message = String(DOG_NAME) + " should go out soon (";
-      message += peeMinutes / 60;
-      message += "h ";
-      message += peeMinutes % 60;
-      message += "m since last pee)";
+      // Build notification message with actual time
+      String message = String(DOG_NAME) + " should go out soon (last pee at ";
+      message += timerManager.getTimestampFormatted(TIMER_PEE);
+      message += ")";
 
       int yellowSuccessCount = 0;
 
@@ -345,12 +343,10 @@ void checkAndSendNotification() {
     unsigned long timeSinceLastRedNotification = millis() - lastRedNotificationTime;
 
     if (timeSinceLastRedNotification >= TELEGRAM_NOTIFICATION_COOLDOWN || lastRedNotificationTime == 0) {
-      // Build notification message
-      String message = String(DOG_NAME) + " needs to pee NOW! (";
-      message += peeMinutes / 60;
-      message += "h ";
-      message += peeMinutes % 60;
-      message += "m since last pee)";
+      // Build notification message with actual time
+      String message = String(DOG_NAME) + " needs to pee NOW! (last pee at ";
+      message += timerManager.getTimestampFormatted(TIMER_PEE);
+      message += ")";
 
       int redSuccessCount = 0;
 
