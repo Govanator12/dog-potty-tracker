@@ -9,7 +9,9 @@ A hardware device to track your dog's potty activities with three independent ti
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
 - **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
 - **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
-- **Remote Commands**: Control timers remotely via Telegram (/pee, /poo, /out, /status)
+- **Remote Commands**: Control timers remotely via Telegram (/pee, /poo, /out, /status, /setpee, /help)
+- **Manual Timer Setting**: Set timers to specific times in the past (e.g., `/setpee 90` for 90 minutes ago)
+- **Alexa Announcements**: Optional integration with Alexa via Voice Monkey for voice alerts
 - **Night Mode**: Configurable quiet hours that turn off display, LEDs, and suppress notifications
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
 - **Configurable Dog Name**: Personalize notifications with your dog's name
@@ -45,6 +47,7 @@ graph TB
     subgraph "External Services"
         NTP[NTP Servers<br/>pool.ntp.org]
         TELEGRAM[Telegram API<br/>Bot messages]
+        VOICEMONKEY[Voice Monkey API<br/>Alexa routines]
     end
 
     subgraph "Configuration"
@@ -77,6 +80,7 @@ graph TB
     WIFI --> DISPLAY
     WIFI --> NTP
     WIFI --> TELEGRAM
+    WIFI --> VOICEMONKEY
 
     %% Configuration
     CONFIG -.-> MAIN
@@ -91,7 +95,7 @@ graph TB
 
     class OLED,BTN1,BTN2,BTN3,LED1,LED2,LED3,ESP hardware
     class TIMER,DISPLAY,BUTTON,LEDCTL,WIFI,STORAGE manager
-    class NTP,TELEGRAM external
+    class NTP,TELEGRAM,VOICEMONKEY external
     class CONFIG,SECRETS config
 ```
 
@@ -324,10 +328,21 @@ The device sends notifications based on LED status (using your dog's name from D
 You can remotely control the timers by sending commands to your Telegram bot! This is perfect when someone else takes the dog out, or when you're away from the device.
 
 **Available Commands:**
+
+*Reset Timers (set to now):*
 - `/pee` - Reset the pee timer remotely
 - `/poo` or `/poop` - Reset the poop timer remotely
 - `/out` or `/outside` - Reset the outside timer remotely
+
+*Set Timers (manually specify minutes ago):*
+- `/setpee <minutes>` - Set pee timer to X minutes ago
+- `/setpoo <minutes>` - Set poop timer to X minutes ago
+- `/setout <minutes>` - Set outside timer to X minutes ago
+- Example: `/setpee 90` sets pee timer to 90 minutes ago
+
+*Information:*
 - `/status` - Get current status of all timers
+- `/help` - Show all available commands
 
 **How It Works:**
 1. Open your Telegram chat with your bot
@@ -361,8 +376,68 @@ Poop: 3:15 PM
 - Someone else takes the dog out and you want to update timers from your phone
 - You're at work and want to check if the dog needs to go out
 - Quick timer updates without physically pressing buttons
+- Manually set a timer if you forgot to press the button (e.g., dog peed 30 minutes ago: `/setpee 30`)
 
-### 7. Install USB Driver (if needed)
+### 7. Configure Alexa Announcements via Voice Monkey (Optional)
+
+Voice Monkey is a free service that creates virtual "doorbell" devices in Alexa. When triggered, these doorbells can activate Alexa routines that make announcements on your Echo devices.
+
+**How It Works:**
+1. Voice Monkey creates virtual doorbell devices
+2. Device triggers the doorbell → Alexa routine runs → Alexa makes announcement
+3. You can customize what Alexa says in the routine
+
+#### Step 1: Sign Up for Voice Monkey
+1. Go to https://voicemonkey.io/
+2. Sign up for a free account
+3. Copy your **API Token** from the dashboard
+
+#### Step 2: Create Monkey Devices
+1. In Voice Monkey dashboard, create 3 new "Monkey" devices:
+   - `dogstartup` - For device startup announcements
+   - `dogyellow` - For warning (90 minute) alerts
+   - `dogred` - For urgent (3 hour) alerts
+2. Note: Device names cannot contain hyphens, use lowercase
+
+#### Step 3: Link Voice Monkey to Alexa
+1. Open the Alexa app on your phone
+2. Go to Devices → Add Device
+3. Search for "Voice Monkey"
+4. Link your Voice Monkey account
+5. Your 3 doorbell devices will appear in Alexa
+
+#### Step 4: Create Alexa Routines
+Create 3 routines in the Alexa app:
+
+**Routine 1: Startup Alert**
+- When: `dogstartup` doorbell rings
+- Action: Alexa says "Fish's potty tracker is online"
+
+**Routine 2: Yellow Alert (Warning)**
+- When: `dogyellow` doorbell rings
+- Action: Alexa says "Fish should go outside soon"
+
+**Routine 3: Red Alert (Urgent)**
+- When: `dogred` doorbell rings
+- Action: Alexa says "Fish needs to pee NOW!"
+
+#### Step 5: Add to secrets.h
+```cpp
+const char* VOICE_MONKEY_TOKEN = "your_api_token_here";
+const char* VOICE_MONKEY_DEVICE_STARTUP = "dogstartup";
+const char* VOICE_MONKEY_DEVICE_YELLOW = "dogyellow";
+const char* VOICE_MONKEY_DEVICE_RED = "dogred";
+```
+
+**Result:** When the tracker detects yellow or red LED status, it triggers Voice Monkey → Alexa routine runs → All your Echo devices announce the alert!
+
+**Notes:**
+- Voice Monkey free tier supports routine triggers
+- You can customize Alexa announcements in the routine settings
+- Announcements play on all Echo devices in your home
+- Leave token blank (`""`) to disable Voice Monkey
+
+### 8. Install USB Driver (if needed)
 
 If your computer doesn't recognize the WeMos D1 Mini:
 - WeMos D1 Mini uses **CH340** USB-to-serial chip

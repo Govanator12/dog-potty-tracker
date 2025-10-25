@@ -317,6 +317,12 @@ void checkAndSendNotification() {
         }
       }
 
+      // Trigger Voice Monkey (Alexa) yellow alert if configured
+      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE_YELLOW) > 0) {
+        DEBUG_PRINTLN("Triggering Voice Monkey yellow alert...");
+        wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE_YELLOW);
+      }
+
       // Update status
       if (yellowSuccessCount > 0) {
         lastYellowNotificationTime = millis();
@@ -370,6 +376,12 @@ void checkAndSendNotification() {
         if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
           redSuccessCount++;
         }
+      }
+
+      // Trigger Voice Monkey (Alexa) red alert if configured
+      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE_RED) > 0) {
+        DEBUG_PRINTLN("Triggering Voice Monkey red alert...");
+        wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE_RED);
       }
 
       // Update status
@@ -471,6 +483,12 @@ void sendStartupNotification() {
     }
   }
 
+  // Trigger Voice Monkey (Alexa) startup alert if configured
+  if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE_STARTUP) > 0) {
+    DEBUG_PRINTLN("Triggering Voice Monkey startup alert...");
+    wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE_STARTUP);
+  }
+
   // Show feedback on display
   if (successCount > 0) {
     String feedbackMessage = "Startup Sent (";
@@ -546,8 +564,82 @@ void handleTelegramCommand(String chatId, String command) {
     commandRecognized = true;
     DEBUG_PRINTLN("Status request processed");
   }
+  else if (command.startsWith("/setpee ")) {
+    // Format: /setpee 90 (minutes ago)
+    int minutes = command.substring(8).toInt();
+    if (minutes > 0) {
+      time_t now = time(nullptr);
+      time_t targetTime = now - (minutes * 60);
+      timerManager.setTimestamp(TIMER_PEE, targetTime);
+      saveToEEPROM();
+      response = "Pee timer set to " + String(minutes) + " minutes ago";
+      displayManager.showFeedback("Pee Set (Remote)", 1500);
+      commandRecognized = true;
+      DEBUG_PRINT("Pee timer manually set to ");
+      DEBUG_PRINT(minutes);
+      DEBUG_PRINTLN(" minutes ago");
+    } else {
+      response = "Invalid format. Use: /setpee <minutes>\nExample: /setpee 90";
+    }
+  }
+  else if (command.startsWith("/setpoo ") || command.startsWith("/setpoop ")) {
+    // Format: /setpoo 120 (minutes ago)
+    int startPos = command.startsWith("/setpoo ") ? 8 : 9;
+    int minutes = command.substring(startPos).toInt();
+    if (minutes > 0) {
+      time_t now = time(nullptr);
+      time_t targetTime = now - (minutes * 60);
+      timerManager.setTimestamp(TIMER_POOP, targetTime);
+      saveToEEPROM();
+      response = "Poop timer set to " + String(minutes) + " minutes ago";
+      displayManager.showFeedback("Poop Set (Remote)", 1500);
+      commandRecognized = true;
+      DEBUG_PRINT("Poop timer manually set to ");
+      DEBUG_PRINT(minutes);
+      DEBUG_PRINTLN(" minutes ago");
+    } else {
+      response = "Invalid format. Use: /setpoo <minutes>\nExample: /setpoo 120";
+    }
+  }
+  else if (command.startsWith("/setout ") || command.startsWith("/setoutside ")) {
+    // Format: /setout 45 (minutes ago)
+    int startPos = command.startsWith("/setout ") ? 8 : 12;
+    int minutes = command.substring(startPos).toInt();
+    if (minutes > 0) {
+      time_t now = time(nullptr);
+      time_t targetTime = now - (minutes * 60);
+      timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
+      saveToEEPROM();
+      response = "Outside timer set to " + String(minutes) + " minutes ago";
+      displayManager.showFeedback("Outside Set (Remote)", 1500);
+      commandRecognized = true;
+      DEBUG_PRINT("Outside timer manually set to ");
+      DEBUG_PRINT(minutes);
+      DEBUG_PRINTLN(" minutes ago");
+    } else {
+      response = "Invalid format. Use: /setout <minutes>\nExample: /setout 45";
+    }
+  }
+  else if (command == "/help") {
+    // Show help message with all available commands
+    response = String(DOG_NAME) + " Tracker Commands:\n\n";
+    response += "Reset Timers:\n";
+    response += "/pee - Reset pee timer\n";
+    response += "/poo - Reset poop timer\n";
+    response += "/out - Reset outside timer\n\n";
+    response += "Set Timers (minutes ago):\n";
+    response += "/setpee <min> - Set pee timer\n";
+    response += "/setpoo <min> - Set poop timer\n";
+    response += "/setout <min> - Set outside timer\n";
+    response += "Example: /setpee 90\n\n";
+    response += "Info:\n";
+    response += "/status - Get current status\n";
+    response += "/help - Show this help";
+    commandRecognized = true;
+    DEBUG_PRINTLN("Help requested");
+  }
   else {
-    response = "Unknown command. Available commands:\n/pee - Reset pee timer\n/poo - Reset poop timer\n/out - Reset outside timer\n/status - Get current status";
+    response = "Unknown command. Send /help for available commands.";
     DEBUG_PRINTLN("Unknown command received");
   }
 

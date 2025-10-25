@@ -42,6 +42,9 @@ public:
   // Set callback for handling Telegram commands
   void setTelegramCommandCallback(TelegramCommandCallback callback);
 
+  // Trigger Voice Monkey device (Alexa routine)
+  bool triggerVoiceMonkey(const char* token, const char* device);
+
 private:
   const char* wifiSsid;
   const char* wifiPassword;

@@ -378,3 +378,52 @@ void WiFiManager::checkBotForMessages(const char* botToken, const char* chatID, 
 
   http.end();
 }
+
+// Trigger Voice Monkey device (Alexa routine)
+bool WiFiManager::triggerVoiceMonkey(const char* token, const char* device) {
+  // Check if we're connected to WiFi
+  if (!isConnected()) {
+    DEBUG_PRINTLN("WiFiManager: Cannot trigger Voice Monkey - not connected to WiFi");
+    return false;
+  }
+
+  // Check if token and device are configured
+  if (token == nullptr || strlen(token) == 0 || device == nullptr || strlen(device) == 0) {
+    DEBUG_PRINTLN("WiFiManager: Voice Monkey token or device not configured");
+    return false;
+  }
+
+  WiFiClientSecure client;
+  client.setInsecure();  // Skip certificate validation
+
+  HTTPClient http;
+
+  // Build Voice Monkey API URL with GET parameters
+  String url = "https://api-v2.voicemonkey.io/trigger?token=";
+  url += token;
+  url += "&device=";
+  url += device;
+
+  DEBUG_PRINT("WiFiManager: Triggering Voice Monkey device: ");
+  DEBUG_PRINTLN(device);
+
+  // Begin HTTP connection
+  http.begin(client, url);
+
+  // Send GET request
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode >= 200 && httpResponseCode < 300) {
+    DEBUG_PRINT("WiFiManager: Voice Monkey triggered successfully (HTTP ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+    http.end();
+    return true;
+  } else {
+    DEBUG_PRINT("WiFiManager: Voice Monkey trigger failed (HTTP ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+    http.end();
+    return false;
+  }
+}
