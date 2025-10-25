@@ -184,7 +184,45 @@ Open Tools -> Manage Libraries and install:
 - **Timers:** Continue running in the background
 - **Disable:** Set both hours to `-1` to disable night mode entirely
 
-### 5. Configure Telegram Notifications (Optional - Free!)
+### 5. Configure Display Mode (Optional)
+
+The display can operate in three different modes, configured in `secrets.h`:
+
+1. Edit `dog-potty-tracker/secrets.h` and set the display mode:
+   ```cpp
+   // Display Mode Configuration
+   const int DISPLAY_MODE = 2;  // 0 = elapsed only, 1 = timestamps only, 2 = cycle
+   const int DISPLAY_CYCLE_SECONDS = 5;  // Seconds between view changes when in cycle mode
+   ```
+
+**Display Modes:**
+
+- **Mode 0 (Elapsed Time Only)**: Display always shows time since last event
+  ```
+  OUT: 2h 15m ago
+  PEE: 0h 45m ago
+  POO: 1h 30m ago
+  3:45 PM
+  ```
+
+- **Mode 1 (Timestamps Only)**: Display always shows actual time of event (requires WiFi/NTP sync)
+  ```
+  OUT: 1:30 PM
+  PEE: 3:00 PM
+  POO: 2:15 PM
+  3:45 PM
+  ```
+
+- **Mode 2 (Cycle - Default)**: Display automatically rotates between elapsed and timestamps every X seconds
+  - Best of both worlds - see both elapsed time and actual timestamps
+  - Configurable rotation interval via `DISPLAY_CYCLE_SECONDS` (default: 5 seconds)
+
+**When to use each mode:**
+- **Mode 0**: Prefer seeing "how long ago" (e.g., "2h 15m ago")
+- **Mode 1**: Prefer seeing "what time" (e.g., "1:30 PM")
+- **Mode 2**: Want to see both - display switches automatically
+
+### 6. Configure Telegram Notifications (Optional - Free!)
 
 Telegram is completely free and provides instant push notifications to your phone.
 
@@ -263,7 +301,7 @@ The device sends notifications based on LED status (using your dog's name from D
 - "Red Alert Sent (3)" - Red notification sent to 3 users
 - "All Clear Sent (2)" - All clear notification sent to 2 users
 
-### 6. Configure Alexa Announcements with Notify Me (Optional - Free!)
+### 7. Configure Alexa Announcements with Notify Me (Optional - Free!)
 
 **Note:** Alexa announcements are separate from Telegram. You can use both together or just one.
 
@@ -309,7 +347,7 @@ The Notify Me skill is completely free and lets Alexa make **spoken voice announ
 - Amazon limits announcements to a reasonable rate
 - The 1-hour cooldown between alerts is well within limits
 
-### 7. Install USB Driver (if needed)
+### 8. Install USB Driver (if needed)
 
 If your computer doesn't recognize the WeMos D1 Mini:
 - WeMos D1 Mini uses **CH340** USB-to-serial chip
@@ -351,9 +389,10 @@ If your computer doesn't recognize the WeMos D1 Mini:
 2. Once connected, it will sync time via NTP (displays "Syncing time...")
 3. Display will show all three timers counting up from 00h 00m
 4. Green LED should turn on (all good status)
-5. Display will auto-rotate every 5 seconds between:
-   - View A: Elapsed time (e.g., "2h 15m ago")
-   - View B: Timestamp (e.g., "1:30 PM")
+5. Display behavior depends on your DISPLAY_MODE setting:
+   - **Mode 0**: Shows elapsed time only (e.g., "2h 15m ago")
+   - **Mode 1**: Shows timestamps only (e.g., "1:30 PM")
+   - **Mode 2** (default): Auto-rotates every 5 seconds (configurable) between elapsed and timestamps
 
 ## Usage
 
@@ -392,7 +431,9 @@ During night mode (default: 11pm - 5am, configurable in secrets.h):
 
 ### Display Views
 
-**View A - Elapsed Time** (5 seconds)
+The display can show three different modes (configured in `secrets.h`):
+
+**Mode 0 - Elapsed Time Only**
 ```
 OUT: 2h 15m ago
 PEE: 0h 45m ago
@@ -400,13 +441,18 @@ POO: 1h 30m ago
 3:45 PM
 ```
 
-**View B - Timestamps** (5 seconds)
+**Mode 1 - Timestamps Only**
 ```
 OUT: 1:30 PM
 PEE: 3:00 PM
 POO: 2:15 PM
 3:45 PM
 ```
+
+**Mode 2 - Auto-Rotate (Default)**
+
+Cycles between the two views above at a configurable interval (default: 5 seconds).
+This gives you both perspectives - elapsed time and actual timestamps.
 
 ## Troubleshooting
 
@@ -458,13 +504,14 @@ POO: 2:15 PM
 **Edit `secrets.h` for personal settings:**
 - **Dog Name**: Your dog's name (used in all notifications)
 - **Night Mode Hours**: Customize quiet hours or disable (set to -1)
+- **Display Mode**: Choose elapsed only (0), timestamps only (1), or cycle (2)
+- **Display Cycle Interval**: Seconds between view changes in cycle mode
 - **WiFi Credentials**: Network name and password
 - **Telegram Bots**: Up to 3 user configurations
 - **Alexa Settings**: Notify Me access code and target device
 
 **Edit `config.h` for hardware/timing settings:**
 - **Timer Thresholds**: Adjust yellow/red LED warning times
-- **Display Rotation**: Change 5-second interval
 - **Timezone**: Adjust NTP timezone offset
 - **Debounce Delay**: Adjust button sensitivity
 - **Pin Mappings**: Change hardware connections
