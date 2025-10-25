@@ -309,11 +309,10 @@ void checkAndSendNotification() {
       }
 
       // Send to Alexa via Voice Monkey (if configured)
-      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE) > 0) {
-        DEBUG_PRINTLN("Sending yellow alert to Alexa...");
-        String alexaMessage = String(DOG_NAME) + " should go outside soon.";
-        if (wifiManager.sendVoiceMonkeyAnnouncement(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE, alexaMessage.c_str())) {
-          DEBUG_PRINTLN("Alexa yellow announcement sent successfully!");
+      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_YELLOW) > 0) {
+        DEBUG_PRINTLN("Triggering yellow alert on Alexa...");
+        if (wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_YELLOW)) {
+          DEBUG_PRINTLN("Alexa yellow routine triggered successfully!");
         }
       }
 
@@ -373,11 +372,10 @@ void checkAndSendNotification() {
       }
 
       // Send to Alexa via Voice Monkey (if configured)
-      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE) > 0) {
-        DEBUG_PRINTLN("Sending red alert to Alexa...");
-        String alexaMessage = String(DOG_NAME) + " needs to pee right now!";
-        if (wifiManager.sendVoiceMonkeyAnnouncement(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE, alexaMessage.c_str())) {
-          DEBUG_PRINTLN("Alexa red announcement sent successfully!");
+      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_RED) > 0) {
+        DEBUG_PRINTLN("Triggering red alert on Alexa...");
+        if (wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_RED)) {
+          DEBUG_PRINTLN("Alexa red routine triggered successfully!");
         }
       }
 
@@ -481,11 +479,10 @@ void sendStartupNotification() {
   }
 
   // Send to Alexa via Voice Monkey (if configured)
-  if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE) > 0) {
-    DEBUG_PRINTLN("Sending startup announcement to Alexa...");
-    String alexaMessage = String(DOG_NAME) + " tracker is online.";
-    if (wifiManager.sendVoiceMonkeyAnnouncement(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE, alexaMessage.c_str())) {
-      DEBUG_PRINTLN("Alexa startup announcement sent successfully!");
+  if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_STARTUP) > 0) {
+    DEBUG_PRINTLN("Triggering startup announcement on Alexa...");
+    if (wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_STARTUP)) {
+      DEBUG_PRINTLN("Alexa startup routine triggered successfully!");
     }
   }
 
