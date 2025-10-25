@@ -51,6 +51,7 @@ bool isQuietHours();
 void handleNightMode();
 void saveToEEPROM();
 void checkAndSendNotification();
+void handleSerialCommands();
 
 void setup() {
   // Initialize serial for debugging
@@ -69,6 +70,9 @@ void setup() {
     // Continue anyway - device can still function
   }
   DEBUG_PRINTLN("Display initialization attempt complete");
+
+  // Configure display mode
+  displayManager.setDisplayMode(DISPLAY_MODE, DISPLAY_CYCLE_SECONDS);
 
   // Show startup message
   DEBUG_PRINTLN("Showing startup message...");
@@ -101,6 +105,9 @@ void setup() {
 
 void loop() {
   unsigned long currentMillis = millis();
+
+  // Check for serial commands
+  handleSerialCommands();
 
   // Update WiFi (handles reconnection)
   wifiManager.update();

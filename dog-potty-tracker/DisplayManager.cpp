@@ -7,7 +7,9 @@ DisplayManager::DisplayManager() :
   feedbackUntil(0),
   showingFeedback(false),
   nightMode(false),
-  displayOn(true)
+  displayOn(true),
+  displayMode(2),  // Default to cycle mode
+  cycleInterval(5000)  // Default to 5 seconds
 {
 }
 
@@ -66,6 +68,24 @@ bool DisplayManager::begin() {
   return true;
 }
 
+void DisplayManager::setDisplayMode(int mode, int cycleSeconds) {
+  displayMode = mode;
+  cycleInterval = cycleSeconds * 1000;  // Convert seconds to milliseconds
+
+  // Set initial view based on mode
+  if (displayMode == 0) {
+    currentView = VIEW_ELAPSED;
+  } else if (displayMode == 1) {
+    currentView = VIEW_TIMESTAMP;
+  }
+
+  DEBUG_PRINT("Display mode set to: ");
+  DEBUG_PRINTLN(displayMode);
+  DEBUG_PRINT("Cycle interval: ");
+  DEBUG_PRINT(cycleSeconds);
+  DEBUG_PRINTLN(" seconds");
+}
+
 void DisplayManager::update(TimerManager* timerManager, bool timeSynced) {
   // Check if we should stop showing feedback
   if (showingFeedback && millis() > feedbackUntil) {
@@ -95,13 +115,28 @@ void DisplayManager::update(TimerManager* timerManager, bool timeSynced) {
 }
 
 void DisplayManager::rotateView(bool timeSynced) {
+  // Handle fixed display modes (0 = elapsed only, 1 = timestamps only)
+  if (displayMode == 0) {
+    currentView = VIEW_ELAPSED;
+    return;
+  } else if (displayMode == 1) {
+    // Timestamps mode requires time sync
+    if (!timeSynced) {
+      currentView = VIEW_ELAPSED;  // Fall back to elapsed if no time sync
+    } else {
+      currentView = VIEW_TIMESTAMP;
+    }
+    return;
+  }
+
+  // Mode 2: Cycle between views
   // Only rotate if time is synced (otherwise always show elapsed)
   if (!timeSynced) {
     currentView = VIEW_ELAPSED;
     return;
   }
 
-  if (millis() - lastViewSwitch >= VIEW_ROTATION_INTERVAL) {
+  if (millis() - lastViewSwitch >= cycleInterval) {
     // Toggle view
     currentView = (currentView == VIEW_ELAPSED) ? VIEW_TIMESTAMP : VIEW_ELAPSED;
     lastViewSwitch = millis();

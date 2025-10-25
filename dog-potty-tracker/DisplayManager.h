@@ -19,6 +19,9 @@ public:
   // Initialize display
   bool begin();
 
+  // Set display mode configuration
+  void setDisplayMode(int mode, int cycleSeconds);
+
   // Update display (handles view rotation)
   void update(TimerManager* timerManager, bool timeSynced);
 
@@ -43,6 +46,10 @@ private:
   bool nightMode;
   bool displayOn;
   String feedbackMessage;
+
+  // Display mode configuration
+  int displayMode;           // 0 = elapsed only, 1 = timestamps only, 2 = cycle
+  unsigned long cycleInterval;  // Milliseconds between view changes in cycle mode
 
   // Render views
   void renderElapsedView(TimerManager* timerManager);
