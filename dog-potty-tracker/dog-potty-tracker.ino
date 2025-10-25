@@ -42,6 +42,7 @@ unsigned long lastYellowNotificationTime = 0;
 bool redLEDWasOn = false;
 bool yellowLEDWasOn = false;
 bool redAlertActive = false;
+bool wasInNightMode = false;
 
 // Function prototypes
 void onButtonShortPress(Button button);
@@ -109,6 +110,19 @@ void loop() {
 
   // Check night mode
   bool nightMode = isNightMode();
+
+  // Check if we just exited night mode
+  if (wasInNightMode && !nightMode) {
+    // Just exited night mode - reset notification cooldown timers
+    DEBUG_PRINTLN("Exited night mode - resetting notification timers");
+    lastRedNotificationTime = millis();  // Prevent immediate red alert
+    lastYellowNotificationTime = millis();  // Prevent immediate yellow alert
+    redLEDWasOn = false;  // Reset LED tracking
+    yellowLEDWasOn = false;  // Reset LED tracking
+  }
+
+  wasInNightMode = nightMode;  // Track for next loop iteration
+
   if (nightMode) {
     handleNightMode();
   } else {
@@ -120,7 +134,7 @@ void loop() {
     ledController.setNightMode(false);
   }
 
-  // Update LED status based on timers
+  // Update LED status based on timers (always called, but LEDs are managed by nightMode flag internally)
   ledController.update(&timerManager);
 
   // Check if we should send notifications (yellow/red LED status changes)

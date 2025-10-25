@@ -78,12 +78,13 @@ void LEDController::setNightMode(bool enabled) {
   if (nightMode != enabled) {
     nightMode = enabled;
     if (enabled) {
-      // Turn all LEDs off
+      // Turn all LEDs off when entering night mode
       setLED(LED_GREEN_STATUS, LOW);
       setLED(LED_YELLOW_STATUS, LOW);
       setLED(LED_RED_STATUS, LOW);
       DEBUG_PRINTLN("LEDController: Night mode ON");
     } else {
+      // Exiting night mode - LEDs will be restored on next update() call
       DEBUG_PRINTLN("LEDController: Night mode OFF");
     }
   } else {

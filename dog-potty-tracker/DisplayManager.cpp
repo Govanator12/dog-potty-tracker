@@ -236,9 +236,12 @@ void DisplayManager::setNightMode(bool enabled) {
   if (nightMode != enabled) {
     nightMode = enabled;
     if (enabled && displayOn) {
+      // Entering night mode - turn display off
       display.ssd1306_command(SSD1306_DISPLAYOFF);
+      displayOn = false;
       DEBUG_PRINTLN("Display: Night mode ON");
-    } else if (!enabled && !displayOn) {
+    } else if (!enabled) {
+      // Exiting night mode - always turn display on
       display.ssd1306_command(SSD1306_DISPLAYON);
       displayOn = true;
       DEBUG_PRINTLN("Display: Night mode OFF");
