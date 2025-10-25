@@ -9,7 +9,6 @@ A hardware device to track your dog's potty activities with three independent ti
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
 - **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
 - **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
-- **Alexa Announcements**: Immediate spoken announcements on Echo devices via Voice Monkey
 - **Night Mode**: Configurable quiet hours that turn off display, LEDs, and suppress notifications
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
 - **Configurable Dog Name**: Personalize notifications with your dog's name
@@ -45,7 +44,6 @@ graph TB
     subgraph "External Services"
         NTP[NTP Servers<br/>pool.ntp.org]
         TELEGRAM[Telegram API<br/>Bot messages]
-        ALEXA[Voice Monkey API<br/>Alexa announcements]
     end
 
     subgraph "Configuration"
@@ -78,7 +76,6 @@ graph TB
     WIFI --> DISPLAY
     WIFI --> NTP
     WIFI --> TELEGRAM
-    WIFI --> ALEXA
 
     %% Configuration
     CONFIG -.-> MAIN
@@ -93,7 +90,7 @@ graph TB
 
     class OLED,BTN1,BTN2,BTN3,LED1,LED2,LED3,ESP hardware
     class TIMER,DISPLAY,BUTTON,LEDCTL,WIFI,STORAGE manager
-    class NTP,TELEGRAM,ALEXA external
+    class NTP,TELEGRAM external
     class CONFIG,SECRETS config
 ```
 
@@ -301,81 +298,7 @@ The device sends notifications based on LED status (using your dog's name from D
 - "Red Alert Sent (3)" - Red notification sent to 3 users
 - "All Clear Sent (2)" - All clear notification sent to 2 users
 
-### 7. Configure Alexa Announcements with Voice Monkey (Optional - Free!)
-
-**Note:** Alexa announcements are separate from Telegram. You can use both together or just one.
-
-Voice Monkey's FREE tier allows you to trigger Alexa Routines that make **immediate spoken announcements**. Your Echo will speak the message out loud instantly, without needing to ask "what are my notifications?"
-
-#### Step 1: Sign Up for Voice Monkey
-1. Go to https://voicemonkey.io
-2. Sign up for a FREE account (no credit card required)
-3. You'll be taken to your dashboard
-
-#### Step 2: Create Monkeys (Triggers)
-1. In the Voice Monkey dashboard, create 3 "Monkeys":
-   - **dogStartup** - for startup notification
-   - **dogYellow** - for yellow/warning alerts
-   - **dogRed** - for red/urgent alerts
-2. Note: Monkey names cannot contain hyphens or special characters
-
-#### Step 3: Enable Voice Monkey Skill
-1. Open the Alexa app on your phone
-2. Go to Skills & Games
-3. Search for "Voice Monkey"
-4. Enable the skill and link it to your Voice Monkey account
-
-#### Step 4: Create Alexa Routines
-Each "Monkey" you created appears as a virtual doorbell device in Alexa. Create 3 routines in the Alexa app:
-
-**Routine 1: Dog Startup**
-- **When:** Smart Home → Select "dogStartup" (appears as a doorbell device) → Doorbell press detected
-- **Add Action:** Alexa Says → Customized → "Fish tracker is online" (use your dog's name)
-- **From:** Select which Echo device to announce on
-
-**Routine 2: Dog Yellow Alert**
-- **When:** Smart Home → Select "dogYellow" (doorbell device) → Doorbell press detected
-- **Add Action:** Alexa Says → Customized → "Fish should go outside soon"
-- **From:** Select which Echo device to announce on
-
-**Routine 3: Dog Red Alert**
-- **When:** Smart Home → Select "dogRed" (doorbell device) → Doorbell press detected
-- **Add Action:** Alexa Says → Customized → "Fish needs to pee right now!"
-- **From:** Select which Echo device to announce on
-
-**Note:** Voice Monkey creates virtual doorbell devices for each monkey. When the device triggers the monkey via API, it "presses the doorbell" which triggers your Alexa routine.
-
-#### Step 5: Get Your API Token
-1. Go back to https://voicemonkey.io/dashboard
-2. Your API token will be displayed on the dashboard
-3. Copy your token (it's a long alphanumeric string)
-
-#### Step 6: Add Configuration to secrets.h
-1. Edit `dog-potty-tracker/secrets.h`
-2. Add your Voice Monkey token and monkey names:
-   ```cpp
-   // Voice Monkey (Alexa) Configuration
-   const char* VOICE_MONKEY_TOKEN = "your_token_here";
-   const char* VOICE_MONKEY_STARTUP = "dogStartup";
-   const char* VOICE_MONKEY_YELLOW = "dogYellow";
-   const char* VOICE_MONKEY_RED = "dogRed";
-   ```
-3. Save the file
-
-**How it works:**
-- Device triggers Voice Monkey → Voice Monkey triggers Alexa Routine → Alexa speaks
-- Yellow LED turns on → Triggers dogYellow routine → Alexa: "Fish should go outside soon"
-- Red LED turns on → Triggers dogRed routine → Alexa: "Fish needs to pee right now!"
-- Startup → Triggers dogStartup routine → Alexa: "Fish tracker is online"
-- Quiet hours (10pm-7am): No triggers sent
-- Announcements play **instantly** on the Echo device you selected in the routine
-
-**Free Tier Includes:**
-- Unlimited routine triggers (what we use)
-- Perfect for this use case
-- No credit card required
-
-### 8. Install USB Driver (if needed)
+### 7. Install USB Driver (if needed)
 
 If your computer doesn't recognize the WeMos D1 Mini:
 - WeMos D1 Mini uses **CH340** USB-to-serial chip
@@ -536,7 +459,6 @@ This gives you both perspectives - elapsed time and actual timestamps.
 - **Display Cycle Interval**: Seconds between view changes in cycle mode
 - **WiFi Credentials**: Network name and password
 - **Telegram Bots**: Up to 3 user configurations
-- **Alexa Settings**: Voice Monkey API token and monkey names for routine triggers
 
 **Edit `config.h` for hardware/timing settings:**
 - **Timer Thresholds**: Adjust yellow/red LED warning times

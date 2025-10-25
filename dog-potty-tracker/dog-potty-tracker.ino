@@ -308,14 +308,6 @@ void checkAndSendNotification() {
         }
       }
 
-      // Send to Alexa via Voice Monkey (if configured)
-      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_YELLOW) > 0) {
-        DEBUG_PRINTLN("Triggering yellow alert on Alexa...");
-        if (wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_YELLOW)) {
-          DEBUG_PRINTLN("Alexa yellow routine triggered successfully!");
-        }
-      }
-
       // Update status
       if (yellowSuccessCount > 0) {
         lastYellowNotificationTime = millis();
@@ -368,14 +360,6 @@ void checkAndSendNotification() {
         DEBUG_PRINTLN("Sending red alert to user 3...");
         if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
           redSuccessCount++;
-        }
-      }
-
-      // Send to Alexa via Voice Monkey (if configured)
-      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_RED) > 0) {
-        DEBUG_PRINTLN("Triggering red alert on Alexa...");
-        if (wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_RED)) {
-          DEBUG_PRINTLN("Alexa red routine triggered successfully!");
         }
       }
 
@@ -475,14 +459,6 @@ void sendStartupNotification() {
     DEBUG_PRINTLN("Sending startup notification to Telegram user 3...");
     if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
       successCount++;
-    }
-  }
-
-  // Send to Alexa via Voice Monkey (if configured)
-  if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_STARTUP) > 0) {
-    DEBUG_PRINTLN("Triggering startup announcement on Alexa...");
-    if (wifiManager.triggerVoiceMonkey(VOICE_MONKEY_TOKEN, VOICE_MONKEY_STARTUP)) {
-      DEBUG_PRINTLN("Alexa startup routine triggered successfully!");
     }
   }
 

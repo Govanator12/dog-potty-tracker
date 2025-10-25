@@ -31,9 +31,6 @@ public:
   // Send Telegram notification
   bool sendTelegramNotification(const char* botToken, const char* chatID, const char* message);
 
-  // Trigger Voice Monkey routine (Alexa announcement via routine)
-  bool triggerVoiceMonkey(const char* token, const char* monkey);
-
 private:
   const char* wifiSsid;
   const char* wifiPassword;
