@@ -163,16 +163,22 @@ bool WiFiManager::sendTelegramNotification(const char* botToken, const char* cha
   }
 }
 
-bool WiFiManager::sendNotifyMeNotification(const char* accessCode, const char* message, const char* targetDevice) {
+bool WiFiManager::sendVoiceMonkeyAnnouncement(const char* token, const char* device, const char* announcement) {
   // Check if we're connected to WiFi
   if (!isConnected()) {
-    DEBUG_PRINTLN("WiFiManager: Cannot send Notify Me announcement - not connected to WiFi");
+    DEBUG_PRINTLN("WiFiManager: Cannot send Voice Monkey announcement - not connected to WiFi");
     return false;
   }
 
-  // Check if access code is configured
-  if (accessCode == nullptr || strlen(accessCode) == 0) {
-    DEBUG_PRINTLN("WiFiManager: Notify Me access code not configured");
+  // Check if token is configured
+  if (token == nullptr || strlen(token) == 0) {
+    DEBUG_PRINTLN("WiFiManager: Voice Monkey token not configured");
+    return false;
+  }
+
+  // Check if device is configured
+  if (device == nullptr || strlen(device) == 0) {
+    DEBUG_PRINTLN("WiFiManager: Voice Monkey device not configured");
     return false;
   }
 
@@ -181,46 +187,52 @@ bool WiFiManager::sendNotifyMeNotification(const char* accessCode, const char* m
 
   HTTPClient http;
 
-  // Notify Me Announce API endpoint (for spoken announcements)
-  String url = "https://api.notifymyecho.com/v1/NotifyMe/Announce";
+  // Voice Monkey Announcement API endpoint
+  String url = "https://api-v2.voicemonkey.io/announcement";
 
-  DEBUG_PRINTLN("WiFiManager: Sending Notify Me (Alexa) announcement...");
-  if (targetDevice != nullptr && strlen(targetDevice) > 0) {
-    DEBUG_PRINT("WiFiManager: Target device: ");
-    DEBUG_PRINTLN(targetDevice);
-  }
+  DEBUG_PRINTLN("WiFiManager: Sending Voice Monkey (Alexa) announcement...");
+  DEBUG_PRINT("WiFiManager: Target device: ");
+  DEBUG_PRINTLN(device);
 
   // Begin HTTP connection
   http.begin(client, url);
-  http.addHeader("Content-Type", "application/json");
+  http.addHeader("Content-Type", "application/json; charset=utf-8");
 
   // Build JSON payload for announcement
-  String payload = "{\"text\":\"";
-  payload += message;
-  payload += "\",\"accessCode\":\"";
-  payload += accessCode;
-  payload += "\"";
-
-  // Add target device if specified
-  if (targetDevice != nullptr && strlen(targetDevice) > 0) {
-    payload += ",\"target\":\"";
-    payload += targetDevice;
-    payload += "\"";
-  }
-
-  payload += "}";
+  String payload = "{\"token\":\"";
+  payload += token;
+  payload += "\",\"device\":\"";
+  payload += device;
+  payload += "\",\"announcement\":\"";
+  payload += announcement;
+  payload += "\"}";
 
   // Send POST request
   int httpResponseCode = http.POST(payload);
 
-  if (httpResponseCode > 0) {
-    DEBUG_PRINT("WiFiManager: Notify Me announcement sent successfully (HTTP ");
+  if (httpResponseCode >= 200 && httpResponseCode < 300) {
+    DEBUG_PRINT("WiFiManager: Voice Monkey announcement sent successfully (HTTP ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(")");
+    DEBUG_PRINTLN("  -> Alexa will speak immediately!");
+    http.end();
+    return true;
+  } else if (httpResponseCode == 401 || httpResponseCode == 403) {
+    DEBUG_PRINT("WiFiManager: Voice Monkey announcement FAILED (HTTP ");
+    DEBUG_PRINT(httpResponseCode);
+    DEBUG_PRINTLN(" - Unauthorized/Forbidden)");
+    DEBUG_PRINTLN("  -> Check your VOICE_MONKEY_TOKEN in secrets.h");
+    DEBUG_PRINTLN("  -> Get your token from https://voicemonkey.io/dashboard");
+    http.end();
+    return false;
+  } else if (httpResponseCode > 0) {
+    DEBUG_PRINT("WiFiManager: Voice Monkey announcement failed (HTTP ");
     DEBUG_PRINT(httpResponseCode);
     DEBUG_PRINTLN(")");
     http.end();
-    return true;
+    return false;
   } else {
-    DEBUG_PRINT("WiFiManager: Notify Me announcement failed (Error: ");
+    DEBUG_PRINT("WiFiManager: Voice Monkey announcement failed (Error: ");
     DEBUG_PRINT(httpResponseCode);
     DEBUG_PRINTLN(")");
     http.end();

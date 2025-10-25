@@ -9,7 +9,7 @@ A hardware device to track your dog's potty activities with three independent ti
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
 - **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
 - **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
-- **Alexa Announcements**: Spoken announcements on specific Echo device via Notify Me skill
+- **Alexa Announcements**: Immediate spoken announcements on Echo devices via Voice Monkey
 - **Night Mode**: Configurable quiet hours that turn off display, LEDs, and suppress notifications
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
 - **Configurable Dog Name**: Personalize notifications with your dog's name
@@ -45,7 +45,7 @@ graph TB
     subgraph "External Services"
         NTP[NTP Servers<br/>pool.ntp.org]
         TELEGRAM[Telegram API<br/>Bot messages]
-        ALEXA[Notify Me API<br/>Alexa announcements]
+        ALEXA[Voice Monkey API<br/>Alexa announcements]
     end
 
     subgraph "Configuration"
@@ -301,51 +301,58 @@ The device sends notifications based on LED status (using your dog's name from D
 - "Red Alert Sent (3)" - Red notification sent to 3 users
 - "All Clear Sent (2)" - All clear notification sent to 2 users
 
-### 7. Configure Alexa Announcements with Notify Me (Optional - Free!)
+### 7. Configure Alexa Announcements with Voice Monkey (Optional - Free!)
 
 **Note:** Alexa announcements are separate from Telegram. You can use both together or just one.
 
-The Notify Me skill is completely free and lets Alexa make **spoken voice announcements** that play immediately on your Echo device. Your Echo will speak the message out loud without needing to ask "what are my notifications?"
+Voice Monkey is completely free and allows Alexa to make **immediate spoken announcements** on your Echo devices. Your Echo will speak the message out loud instantly, without needing to ask "what are my notifications?"
 
-#### Step 1: Enable Notify Me Skill
+#### Step 1: Sign Up for Voice Monkey
+1. Go to https://voicemonkey.io
+2. Sign up for a FREE account (no credit card required)
+3. You'll be taken to your dashboard
+
+#### Step 2: Enable Voice Monkey Skill
 1. Open the Alexa app on your phone
 2. Go to Skills & Games
-3. Search for "Notify Me" (by Thomptronics)
-4. Enable the skill
-5. Grant permission to send notifications
+3. Search for "Voice Monkey"
+4. Enable the skill and link it to your Voice Monkey account
 
-#### Step 2: Get Your Access Code
-1. Say to your Alexa: **"Alexa, open Notify Me"**
-2. Alexa will introduce itself and send your access code to your email
-3. Check your email for the access code (looks like `nmac.XXXXX`)
+#### Step 3: Get Your API Token
+1. Go to https://voicemonkey.io/dashboard
+2. Your API token will be displayed on the dashboard
+3. Copy your token (it's a long alphanumeric string)
 
-#### Step 3: Add Access Code and Device Name to secrets.h
+#### Step 4: Add Token and Device Name to secrets.h
 1. Edit `dog-potty-tracker/secrets.h`
-2. Add your Notify Me access code and optionally specify which Echo device:
+2. Add your Voice Monkey token and Echo device name:
    ```cpp
-   // Notify Me (Alexa) Configuration
-   const char* NOTIFY_ME_ACCESS_CODE = "nmac.XXXXX";
-   const char* ALEXA_DEVICE_NAME = "Kitchen Echo";  // Specific device, or "" for all devices
+   // Voice Monkey (Alexa) Configuration
+   const char* VOICE_MONKEY_TOKEN = "your_token_here";
+   const char* VOICE_MONKEY_DEVICE = "Kitchen Echo";  // Exact Echo device name from Alexa app
    ```
 3. Save the file
 
 **How it works:**
-- Yellow LED turns on → Alexa announces: "{DOG_NAME} should go outside soon."
+- Yellow LED turns on → Alexa announces immediately: "{DOG_NAME} should go outside soon."
   - Example: "Fish should go outside soon."
-- Red LED turns on → Alexa announces: "{DOG_NAME} needs to pee right now!"
+- Red LED turns on → Alexa announces immediately: "{DOG_NAME} needs to pee right now!"
   - Example: "Fish needs to pee right now!"
-- Red LED turns off → Alexa stays silent (only Telegram notification sent)
+- Startup → Alexa announces: "{DOG_NAME} tracker is online."
+  - Example: "Fish tracker is online."
 - Quiet hours (10pm-7am): No Alexa announcements
-- Announcements play **immediately** - no need to ask Alexa anything
+- Announcements play **instantly** - no user action required
 
-**Device Targeting:**
-- Specify `ALEXA_DEVICE_NAME` to announce on only one specific Echo device (e.g., "Kitchen Echo", "Living Room")
-- Leave blank (`""`) to announce on all Echo devices in your home
-- Device name must match exactly as shown in your Alexa app
+**Device Naming:**
+- Use the EXACT device name as shown in your Alexa app
+- Examples: "Kitchen Echo", "Living Room", "Bedroom"
+- Case-sensitive and must match exactly
+- Each announcement targets only the specified device
 
-**Limitations:**
-- Amazon limits announcements to a reasonable rate
-- The 1-hour cooldown between alerts is well within limits
+**Free Tier Includes:**
+- Unlimited routine triggers
+- Text-to-speech announcements (what we use)
+- More than enough for this use case
 
 ### 8. Install USB Driver (if needed)
 
@@ -508,7 +515,7 @@ This gives you both perspectives - elapsed time and actual timestamps.
 - **Display Cycle Interval**: Seconds between view changes in cycle mode
 - **WiFi Credentials**: Network name and password
 - **Telegram Bots**: Up to 3 user configurations
-- **Alexa Settings**: Notify Me access code and target device
+- **Alexa Settings**: Voice Monkey API token and target Echo device name
 
 **Edit `config.h` for hardware/timing settings:**
 - **Timer Thresholds**: Adjust yellow/red LED warning times

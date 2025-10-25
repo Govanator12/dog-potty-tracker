@@ -31,8 +31,8 @@ public:
   // Send Telegram notification
   bool sendTelegramNotification(const char* botToken, const char* chatID, const char* message);
 
-  // Send Notify Me (Alexa) notification
-  bool sendNotifyMeNotification(const char* accessCode, const char* message, const char* targetDevice = nullptr);
+  // Send Voice Monkey (Alexa) announcement
+  bool sendVoiceMonkeyAnnouncement(const char* token, const char* device, const char* announcement);
 
 private:
   const char* wifiSsid;

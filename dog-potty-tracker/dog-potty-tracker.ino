@@ -43,6 +43,7 @@ bool redLEDWasOn = false;
 bool yellowLEDWasOn = false;
 bool redAlertActive = false;
 bool wasInNightMode = false;
+bool startupNotificationSent = false;
 
 // Function prototypes
 void onButtonShortPress(Button button);
@@ -51,7 +52,7 @@ bool isQuietHours();
 void handleNightMode();
 void saveToEEPROM();
 void checkAndSendNotification();
-void handleSerialCommands();
+void sendStartupNotification();
 
 void setup() {
   // Initialize serial for debugging
@@ -106,11 +107,14 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  // Check for serial commands
-  handleSerialCommands();
-
   // Update WiFi (handles reconnection)
   wifiManager.update();
+
+  // Send startup notification once WiFi and time are ready
+  if (!startupNotificationSent && wifiManager.isConnected() && wifiManager.isTimeSynced()) {
+    sendStartupNotification();
+    startupNotificationSent = true;
+  }
 
   // Check for button presses
   buttonHandler.update();
@@ -304,12 +308,12 @@ void checkAndSendNotification() {
         }
       }
 
-      // Send to Alexa via Notify Me (if configured)
-      if (strlen(NOTIFY_ME_ACCESS_CODE) > 0) {
+      // Send to Alexa via Voice Monkey (if configured)
+      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE) > 0) {
         DEBUG_PRINTLN("Sending yellow alert to Alexa...");
         String alexaMessage = String(DOG_NAME) + " should go outside soon.";
-        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, alexaMessage.c_str(), ALEXA_DEVICE_NAME)) {
-          DEBUG_PRINTLN("Alexa yellow notification sent successfully!");
+        if (wifiManager.sendVoiceMonkeyAnnouncement(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE, alexaMessage.c_str())) {
+          DEBUG_PRINTLN("Alexa yellow announcement sent successfully!");
         }
       }
 
@@ -368,12 +372,12 @@ void checkAndSendNotification() {
         }
       }
 
-      // Send to Alexa via Notify Me (if configured)
-      if (strlen(NOTIFY_ME_ACCESS_CODE) > 0) {
+      // Send to Alexa via Voice Monkey (if configured)
+      if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE) > 0) {
         DEBUG_PRINTLN("Sending red alert to Alexa...");
         String alexaMessage = String(DOG_NAME) + " needs to pee right now!";
-        if (wifiManager.sendNotifyMeNotification(NOTIFY_ME_ACCESS_CODE, alexaMessage.c_str(), ALEXA_DEVICE_NAME)) {
-          DEBUG_PRINTLN("Alexa red notification sent successfully!");
+        if (wifiManager.sendVoiceMonkeyAnnouncement(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE, alexaMessage.c_str())) {
+          DEBUG_PRINTLN("Alexa red announcement sent successfully!");
         }
       }
 
@@ -446,4 +450,55 @@ void checkAndSendNotification() {
   // Update LED states for next iteration
   yellowLEDWasOn = yellowLEDIsOn;
   redLEDWasOn = redLEDIsOn;
+}
+
+void sendStartupNotification() {
+  DEBUG_PRINTLN("Sending startup notifications...");
+
+  String message = String(DOG_NAME) + " tracker is online!";
+  int successCount = 0;
+
+  // Send to all configured Telegram users
+  if (strlen(TELEGRAM_BOT_TOKEN_1) > 0 && strlen(TELEGRAM_CHAT_ID_1) > 0) {
+    DEBUG_PRINTLN("Sending startup notification to Telegram user 1...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, message.c_str())) {
+      successCount++;
+    }
+  }
+
+  if (strlen(TELEGRAM_BOT_TOKEN_2) > 0 && strlen(TELEGRAM_CHAT_ID_2) > 0) {
+    DEBUG_PRINTLN("Sending startup notification to Telegram user 2...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, message.c_str())) {
+      successCount++;
+    }
+  }
+
+  if (strlen(TELEGRAM_BOT_TOKEN_3) > 0 && strlen(TELEGRAM_CHAT_ID_3) > 0) {
+    DEBUG_PRINTLN("Sending startup notification to Telegram user 3...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
+      successCount++;
+    }
+  }
+
+  // Send to Alexa via Voice Monkey (if configured)
+  if (strlen(VOICE_MONKEY_TOKEN) > 0 && strlen(VOICE_MONKEY_DEVICE) > 0) {
+    DEBUG_PRINTLN("Sending startup announcement to Alexa...");
+    String alexaMessage = String(DOG_NAME) + " tracker is online.";
+    if (wifiManager.sendVoiceMonkeyAnnouncement(VOICE_MONKEY_TOKEN, VOICE_MONKEY_DEVICE, alexaMessage.c_str())) {
+      DEBUG_PRINTLN("Alexa startup announcement sent successfully!");
+    }
+  }
+
+  // Show feedback on display
+  if (successCount > 0) {
+    String feedbackMessage = "Startup Sent (";
+    feedbackMessage += successCount;
+    feedbackMessage += ")";
+    displayManager.showFeedback(feedbackMessage.c_str(), 2000);
+    DEBUG_PRINT("Startup notifications sent successfully to ");
+    DEBUG_PRINT(successCount);
+    DEBUG_PRINTLN(" recipient(s)!");
+  } else {
+    DEBUG_PRINTLN("No notification recipients configured");
+  }
 }
