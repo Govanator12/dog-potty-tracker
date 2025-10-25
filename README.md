@@ -10,7 +10,7 @@ A hardware device to track your dog's potty activities with three independent ti
 - **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
 - **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
 - **Alexa Announcements**: Spoken announcements on specific Echo device via Notify Me skill
-- **Night Mode**: Auto sleep 11pm-5am to save power
+- **Night Mode**: Configurable quiet hours that turn off display, LEDs, and suppress notifications
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
 - **Configurable Dog Name**: Personalize notifications with your dog's name
 
@@ -86,10 +86,10 @@ graph TB
     SECRETS -.-> MAIN
 
     %% Styling
-    classDef hardware fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef manager fill:#fff9c4,stroke:#f57f17,stroke-width:2px
-    classDef external fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef config fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef hardware fill:#e1f5ff,stroke:#01579b,stroke-width:2px,color:#000
+    classDef manager fill:#fff9c4,stroke:#f57f17,stroke-width:2px,color:#000
+    classDef external fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef config fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px,color:#000
 
     class OLED,BTN1,BTN2,BTN3,LED1,LED2,LED3,ESP hardware
     class TIMER,DISPLAY,BUTTON,LEDCTL,WIFI,STORAGE manager
@@ -161,16 +161,28 @@ Open Tools -> Manage Libraries and install:
 - **Time** (by Michael Margolis)
 - **EEPROM** (built-in)
 
-### 4. Configure WiFi Credentials and Dog Name
+### 4. Configure WiFi Credentials, Dog Name, and Night Mode
 
 1. Copy `dog-potty-tracker/secrets.h.example` to `dog-potty-tracker/secrets.h`
-2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials and dog's name:
+2. Edit `dog-potty-tracker/secrets.h` with your WiFi credentials, dog's name, and night mode hours:
    ```cpp
    const char* WIFI_SSID = "YourNetworkName";
    const char* WIFI_PASSWORD = "YourPassword";
    const char* DOG_NAME = "Fish";  // Your dog's name (used in notifications)
+
+   // Night Mode Configuration (optional - quiet hours)
+   const int NIGHT_MODE_START_HOUR = 23;  // 11 PM (24-hour format: 0-23)
+   const int NIGHT_MODE_END_HOUR = 5;     // 5 AM (24-hour format: 0-23)
    ```
 3. Save the file (this file is ignored by git for security)
+
+**Night Mode Behavior:**
+- **Display:** Turns off completely during night mode hours
+- **LEDs:** All status LEDs turn off during night mode hours
+- **Notifications:** All Telegram and Alexa notifications are suppressed
+- **Buttons:** Still work - pressing any button wakes the display for 10 seconds and logs the event
+- **Timers:** Continue running in the background
+- **Disable:** Set both hours to `-1` to disable night mode entirely
 
 ### 5. Configure Telegram Notifications (Optional - Free!)
 
@@ -367,12 +379,16 @@ LEDs are based on the **Pee timer only**:
 - **Yellow**: Pee timer > 90 minutes (warning)
 - **Red**: Pee timer > 3 hours (urgent)
 
-### Night Mode (11pm - 5am)
+### Night Mode (Configurable Quiet Hours)
 
-- Display and LEDs automatically turn off at 11pm
-- Press any button to wake display AND log event
-- Display stays on for 10 seconds then turns back off
-- Timers continue running in background
+During night mode (default: 11pm - 5am, configurable in secrets.h):
+
+- **Display:** Turns off completely to avoid light disturbance
+- **LEDs:** All status LEDs turn off
+- **Notifications:** All Telegram and Alexa notifications are suppressed (no alerts during sleep hours)
+- **Buttons:** Still functional - pressing any button wakes display for 10 seconds AND logs the event
+- **Timers:** Continue running accurately in the background
+- **Configuration:** Hours can be customized in secrets.h, or disabled entirely by setting both to -1
 
 ### Display Views
 
@@ -439,13 +455,19 @@ POO: 2:15 PM
 
 ## Configuration
 
-Edit `src/config.h` to customize:
+**Edit `secrets.h` for personal settings:**
+- **Dog Name**: Your dog's name (used in all notifications)
+- **Night Mode Hours**: Customize quiet hours or disable (set to -1)
+- **WiFi Credentials**: Network name and password
+- **Telegram Bots**: Up to 3 user configurations
+- **Alexa Settings**: Notify Me access code and target device
 
+**Edit `config.h` for hardware/timing settings:**
 - **Timer Thresholds**: Adjust yellow/red LED warning times
-- **Night Mode Hours**: Change 11pm-5am to different times
 - **Display Rotation**: Change 5-second interval
 - **Timezone**: Adjust NTP timezone offset
 - **Debounce Delay**: Adjust button sensitivity
+- **Pin Mappings**: Change hardware connections
 
 ## Power Requirements
 

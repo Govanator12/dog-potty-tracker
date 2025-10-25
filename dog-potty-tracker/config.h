@@ -31,8 +31,10 @@
 #define RED_POOP_THRESHOLD 300       // 5 hours
 
 // Night Mode Configuration
-#define NIGHT_MODE_START_HOUR 23  // 11 PM
-#define NIGHT_MODE_END_HOUR 5     // 5 AM
+// NOTE: Night mode hours are now configured in secrets.h (not here)
+// These values are kept for backward compatibility but are not used
+// #define NIGHT_MODE_START_HOUR 23  // 11 PM (DEPRECATED - use secrets.h)
+// #define NIGHT_MODE_END_HOUR 5     // 5 AM (DEPRECATED - use secrets.h)
 
 // EEPROM Configuration
 #define EEPROM_SIZE 512

@@ -176,6 +176,11 @@ void onButtonShortPress(Button button) {
 }
 
 bool isNightMode() {
+  // Check if night mode is disabled
+  if (NIGHT_MODE_START_HOUR == -1 || NIGHT_MODE_END_HOUR == -1) {
+    return false;
+  }
+
   // Only enable night mode if time is synced
   if (!wifiManager.isTimeSynced()) {
     return false;
@@ -185,7 +190,7 @@ bool isNightMode() {
   struct tm* t = localtime(&now);
   int hour = t->tm_hour;
 
-  // Night mode: 11pm (23) to 5am
+  // Check if current hour is within night mode range
   return (hour >= NIGHT_MODE_START_HOUR || hour < NIGHT_MODE_END_HOUR);
 }
 
