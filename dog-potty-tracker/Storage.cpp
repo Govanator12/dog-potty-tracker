@@ -18,11 +18,19 @@ void Storage::save(TimerManager* timerManager) {
   // Calculate checksum
   data.checksum = calculateChecksum(&data);
 
+  DEBUG_PRINTLN("Storage: Saving to EEPROM...");
+  DEBUG_PRINT("  Structure size: ");
+  DEBUG_PRINTLN(sizeof(PersistentData));
+  #ifdef DEBUG
+    Serial.print("  Calculated checksum: 0x");
+    Serial.println(data.checksum, HEX);
+  #endif
+
   // Write to EEPROM
   EEPROM.put(EEPROM_ADDRESS, data);
   EEPROM.commit();
 
-  DEBUG_PRINTLN("Storage: Data saved to EEPROM");
+  DEBUG_PRINTLN("Storage: Data saved to EEPROM successfully");
   DEBUG_PRINT("  Outside: ");
   DEBUG_PRINTLN(data.outsideTimestamp);
   DEBUG_PRINT("  Pee: ");
@@ -35,10 +43,31 @@ bool Storage::load(TimerManager* timerManager) {
   // Read from EEPROM
   EEPROM.get(EEPROM_ADDRESS, data);
 
+  DEBUG_PRINTLN("Storage: Reading from EEPROM...");
+  DEBUG_PRINT("  Structure size: ");
+  DEBUG_PRINTLN(sizeof(PersistentData));
+  #ifdef DEBUG
+    Serial.print("  Stored checksum: 0x");
+    Serial.println(data.checksum, HEX);
+  #endif
+
   // Verify checksum
   uint8_t expectedChecksum = calculateChecksum(&data);
+  #ifdef DEBUG
+    Serial.print("  Calculated checksum: 0x");
+    Serial.println(expectedChecksum, HEX);
+  #endif
+
   if (data.checksum != expectedChecksum) {
     DEBUG_PRINTLN("Storage: Checksum mismatch - data corrupted or first boot");
+    DEBUG_PRINT("  Outside: ");
+    DEBUG_PRINTLN(data.outsideTimestamp);
+    DEBUG_PRINT("  Pee: ");
+    DEBUG_PRINTLN(data.peeTimestamp);
+    DEBUG_PRINT("  Poop: ");
+    DEBUG_PRINTLN(data.poopTimestamp);
+    DEBUG_PRINT("  Last save: ");
+    DEBUG_PRINTLN(data.lastSaveTime);
     return false;
   }
 
@@ -47,7 +76,7 @@ bool Storage::load(TimerManager* timerManager) {
   timerManager->setTimestamp(TIMER_PEE, (time_t)data.peeTimestamp);
   timerManager->setTimestamp(TIMER_POOP, (time_t)data.poopTimestamp);
 
-  DEBUG_PRINTLN("Storage: Data loaded from EEPROM");
+  DEBUG_PRINTLN("Storage: Data loaded from EEPROM successfully");
   DEBUG_PRINT("  Outside: ");
   DEBUG_PRINTLN(data.outsideTimestamp);
   DEBUG_PRINT("  Pee: ");
@@ -74,7 +103,10 @@ uint8_t Storage::calculateChecksum(PersistentData* data) {
   uint8_t* bytes = (uint8_t*)data;
 
   // XOR all bytes except the checksum byte itself
-  for (size_t i = 0; i < sizeof(PersistentData) - 1; i++) {
+  // The checksum is the LAST byte, so calculate over all bytes before it
+  size_t checksumOffset = offsetof(PersistentData, checksum);
+
+  for (size_t i = 0; i < checksumOffset; i++) {
     checksum ^= bytes[i];
   }
 
