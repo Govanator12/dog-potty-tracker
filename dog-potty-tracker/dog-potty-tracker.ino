@@ -613,6 +613,26 @@ void handleTelegramCommand(String chatId, String command) {
       response = "Invalid format. Use: setout <minutes>\nExample: setout 45";
     }
   }
+  else if (command.startsWith("setall ")) {
+    // Format: setall 60 (sets all timers to 60 minutes ago)
+    int minutes = command.substring(7).toInt();
+    if (minutes > 0) {
+      time_t now = time(nullptr);
+      time_t targetTime = now - (minutes * 60);
+      timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
+      timerManager.setTimestamp(TIMER_PEE, targetTime);
+      timerManager.setTimestamp(TIMER_POOP, targetTime);
+      saveToEEPROM();
+      response = "All timers set to " + String(minutes) + " minutes ago";
+      displayManager.showFeedback("All Set (Remote)", 1500);
+      commandRecognized = true;
+      DEBUG_PRINT("All timers manually set to ");
+      DEBUG_PRINT(minutes);
+      DEBUG_PRINTLN(" minutes ago");
+    } else {
+      response = "Invalid format. Use: setall <minutes>\nExample: setall 60";
+    }
+  }
   // Note: /help command removed - set up commands via @BotFather instead (see secrets.h.example)
   // This avoids SSL connection failures and provides better UI in Telegram
 
