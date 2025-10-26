@@ -133,8 +133,14 @@ void loop() {
 
   // Check if we just exited night mode
   if (wasInNightMode && !nightMode) {
-    // Just exited night mode - reset notification cooldown timers
-    DEBUG_PRINTLN("Exited night mode - resetting notification timers");
+    // Just exited night mode - reset all timers (assume dog went out in the morning)
+    DEBUG_PRINTLN("Exited night mode - resetting all timers");
+    timerManager.resetOutside();
+    timerManager.resetPee();
+    timerManager.resetPoop();
+    saveToEEPROM();  // Save the reset timers immediately
+
+    // Reset notification cooldown timers
     lastRedNotificationTime = millis();  // Prevent immediate red alert
     lastYellowNotificationTime = millis();  // Prevent immediate yellow alert
     redLEDWasOn = false;  // Reset LED tracking
