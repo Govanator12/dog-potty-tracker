@@ -7,7 +7,7 @@ WiFiManager::WiFiManager() :
   connecting(false),
   commandCallback(nullptr),
   lastTelegramCheck(0),
-  telegramCheckInterval(5000),  // Check every 5 seconds (reduced to prevent SSL exhaustion)
+  telegramCheckInterval(30000),  // Check every 30 seconds (replies disabled, low priority)
   replyPending(false),
   replyPendingSince(0)
 {
@@ -325,7 +325,7 @@ void WiFiManager::pollTelegramMessages(const char* botToken1, const char* chatID
     }
   }
 
-  // Rate limit checks to every 5 seconds
+  // Rate limit checks to every 30 seconds (low priority, replies disabled)
   unsigned long now = millis();
   if (now - lastTelegramCheck < telegramCheckInterval) {
     return;

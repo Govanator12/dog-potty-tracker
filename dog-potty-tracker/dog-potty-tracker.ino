@@ -549,24 +549,8 @@ void handleTelegramCommand(String chatId, String command) {
     commandRecognized = true;
     DEBUG_PRINTLN("Remote outside command executed");
   }
-  else if (command == "status") {
-    // Build status message with current timer values
-    response = String(DOG_NAME) + " Status:\n";
-    response += "Outside: " + timerManager.getElapsedFormatted(TIMER_OUTSIDE) + "\n";
-    response += "Pee: " + timerManager.getElapsedFormatted(TIMER_PEE) + "\n";
-    response += "Poop: " + timerManager.getElapsedFormatted(TIMER_POOP);
-
-    // Add timestamp info if time is synced
-    if (wifiManager.isTimeSynced()) {
-      response += "\n\nLast times:\n";
-      response += "Outside: " + timerManager.getTimestampFormatted(TIMER_OUTSIDE) + "\n";
-      response += "Pee: " + timerManager.getTimestampFormatted(TIMER_PEE) + "\n";
-      response += "Poop: " + timerManager.getTimestampFormatted(TIMER_POOP);
-    }
-
-    commandRecognized = true;
-    DEBUG_PRINTLN("Status request processed");
-  }
+  // Note: /status command removed - cannot send replies on ESP8266 due to SSL limitations
+  // For status with replies, upgrade to Raspberry Pi Pico W (see micropython-pico-w branch)
   else if (command.startsWith("setpee ")) {
     // Format: setpee 90 (minutes ago)
     int minutes = command.substring(7).toInt();
