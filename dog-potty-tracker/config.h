@@ -25,10 +25,10 @@
 #define NIGHT_MODE_WAKE_DURATION 10000  // milliseconds (10 seconds)
 
 // Timer Thresholds (in minutes)
-#define YELLOW_PEE_THRESHOLD 90      // 1.5 hours
-#define YELLOW_POOP_THRESHOLD 150    // 2.5 hours
-#define RED_PEE_THRESHOLD 150        // 2.5 hours
-#define RED_POOP_THRESHOLD 300       // 5 hours
+#define YELLOW_PEE_THRESHOLD 150      // 2.5 hours
+#define YELLOW_POOP_THRESHOLD 300    // 5 hours
+#define RED_PEE_THRESHOLD 240        // 4 hours
+#define RED_POOP_THRESHOLD 480       // 8 hours
 
 // Night Mode Configuration
 // NOTE: Night mode hours are now configured in secrets.h (not here)

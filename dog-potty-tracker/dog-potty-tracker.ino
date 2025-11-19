@@ -277,8 +277,8 @@ void checkAndSendNotification() {
 
   // Get pee timer in minutes
   unsigned long peeMinutes = timerManager.getElapsed(TIMER_PEE) / 60;
-  bool yellowLEDIsOn = (peeMinutes > 90);   // Yellow LED turns on at 90 minutes
-  bool redLEDIsOn = (peeMinutes > 180);     // Red LED turns on at 3 hours (180 minutes)
+  bool yellowLEDIsOn = (peeMinutes > YELLOW_PEE_THRESHOLD);
+  bool redLEDIsOn = (peeMinutes > RED_PEE_THRESHOLD);
 
   // Track if we sent any notifications this cycle
   int successCount = 0;
