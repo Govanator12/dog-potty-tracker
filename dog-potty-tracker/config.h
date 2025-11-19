@@ -24,11 +24,11 @@
 #define VIEW_ROTATION_INTERVAL 5000  // milliseconds (5 seconds)
 #define NIGHT_MODE_WAKE_DURATION 10000  // milliseconds (10 seconds)
 
-// Timer Thresholds (in minutes)
-#define YELLOW_PEE_THRESHOLD 150      // 2.5 hours
-#define YELLOW_POOP_THRESHOLD 300    // 5 hours
-#define RED_PEE_THRESHOLD 240        // 4 hours
-#define RED_POOP_THRESHOLD 480       // 8 hours
+// LED Alert Thresholds (in minutes)
+// Yellow LED turns on after this many minutes since last pee
+// Red LED turns on after this many minutes since last pee
+#define YELLOW_THRESHOLD 150      // 2.5 hours - warning alert
+#define RED_THRESHOLD 240         // 4 hours - urgent alert
 
 // Night Mode Configuration
 // NOTE: Night mode hours are now configured in secrets.h (not here)

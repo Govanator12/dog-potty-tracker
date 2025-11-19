@@ -45,6 +45,10 @@ bool redAlertActive = false;
 bool wasInNightMode = false;
 bool startupNotificationSent = false;
 
+// Runtime LED thresholds (can be modified via Telegram commands)
+unsigned int yellowThreshold = YELLOW_THRESHOLD;
+unsigned int redThreshold = RED_THRESHOLD;
+
 // Function prototypes
 void onButtonShortPress(Button button);
 bool isNightMode();
@@ -277,8 +281,8 @@ void checkAndSendNotification() {
 
   // Get pee timer in minutes
   unsigned long peeMinutes = timerManager.getElapsed(TIMER_PEE) / 60;
-  bool yellowLEDIsOn = (peeMinutes > YELLOW_PEE_THRESHOLD);
-  bool redLEDIsOn = (peeMinutes > RED_PEE_THRESHOLD);
+  bool yellowLEDIsOn = (peeMinutes > yellowThreshold);
+  bool redLEDIsOn = (peeMinutes > redThreshold);
 
   // Track if we sent any notifications this cycle
   int successCount = 0;
@@ -631,6 +635,36 @@ void handleTelegramCommand(String chatId, String command) {
       DEBUG_PRINTLN(" minutes ago");
     } else {
       response = "Invalid format. Use: setall <minutes>\nExample: setall 60";
+    }
+  }
+  else if (command.startsWith("setyellow ")) {
+    // Format: setyellow 150 (sets yellow threshold to 150 minutes)
+    int minutes = command.substring(10).toInt();
+    if (minutes > 0 && minutes < 1440) {  // Max 24 hours
+      yellowThreshold = minutes;
+      response = "Yellow alert threshold set to " + String(minutes) + " minutes (until reboot)";
+      displayManager.showFeedback("Yellow Set", 1500);
+      commandRecognized = true;
+      DEBUG_PRINT("Yellow threshold set to ");
+      DEBUG_PRINT(minutes);
+      DEBUG_PRINTLN(" minutes");
+    } else {
+      response = "Invalid format. Use: setyellow <minutes> (1-1439)\nExample: setyellow 150";
+    }
+  }
+  else if (command.startsWith("setred ")) {
+    // Format: setred 240 (sets red threshold to 240 minutes)
+    int minutes = command.substring(7).toInt();
+    if (minutes > 0 && minutes < 1440) {  // Max 24 hours
+      redThreshold = minutes;
+      response = "Red alert threshold set to " + String(minutes) + " minutes (until reboot)";
+      displayManager.showFeedback("Red Set", 1500);
+      commandRecognized = true;
+      DEBUG_PRINT("Red threshold set to ");
+      DEBUG_PRINT(minutes);
+      DEBUG_PRINTLN(" minutes");
+    } else {
+      response = "Invalid format. Use: setred <minutes> (1-1439)\nExample: setred 240";
     }
   }
   // Note: /help command removed - set up commands via @BotFather instead (see secrets.h.example)

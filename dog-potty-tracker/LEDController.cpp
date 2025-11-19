@@ -33,14 +33,18 @@ void LEDController::evaluateStatus(TimerManager* timerManager) {
   // Get elapsed time in minutes for pee timer only
   unsigned long peeMinutes = timerManager->getElapsed(TIMER_PEE) / 60;
 
+  // Get runtime thresholds from main sketch
+  extern unsigned int yellowThreshold;
+  extern unsigned int redThreshold;
+
   // Check RED condition first (highest priority)
-  if (peeMinutes > RED_PEE_THRESHOLD) {
+  if (peeMinutes > redThreshold) {
     setLED(LED_RED_STATUS, HIGH);
     setLED(LED_YELLOW_STATUS, LOW);
     setLED(LED_GREEN_STATUS, LOW);
   }
   // Check YELLOW condition
-  else if (peeMinutes > YELLOW_PEE_THRESHOLD) {
+  else if (peeMinutes > yellowThreshold) {
     setLED(LED_RED_STATUS, LOW);
     setLED(LED_YELLOW_STATUS, HIGH);
     setLED(LED_GREEN_STATUS, LOW);
