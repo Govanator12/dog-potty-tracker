@@ -9,10 +9,11 @@ A hardware device to track your dog's potty activities with three independent ti
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
 - **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
 - **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
-- **Remote Commands**: Control timers remotely via Telegram (/pee, /poo, /out, /status, /setpee, /help)
+- **Remote Commands**: Control timers remotely via Telegram (/pee, /poo, /out, /setpee, /setall, /setyellow, /setred)
 - **Manual Timer Setting**: Set timers to specific times in the past (e.g., `/setpee 90` for 90 minutes ago)
+- **Configurable LED Thresholds**: Adjust warning/urgent alert times via Telegram commands
 - **Alexa Announcements**: Optional integration with Alexa via Voice Monkey for voice alerts
-- **Night Mode**: Configurable quiet hours that turn off display, LEDs, and suppress notifications
+- **Quiet Hours**: Configurable night mode that suppresses notifications (display/LEDs stay on)
 - **Data Persistence**: Timers saved to EEPROM, survive power loss
 - **Configurable Dog Name**: Personalize notifications with your dog's name
 
@@ -178,13 +179,13 @@ Open Tools -> Manage Libraries and install:
    ```
 3. Save the file (this file is ignored by git for security)
 
-**Night Mode Behavior:**
-- **Display:** Turns off completely during night mode hours
-- **LEDs:** All status LEDs turn off during night mode hours
-- **Notifications:** All Telegram and Alexa notifications are suppressed
-- **Buttons:** Still work - pressing any button wakes the display for 10 seconds and logs the event
-- **Timers:** Continue running in the background
-- **Disable:** Set both hours to `-1` to disable night mode entirely
+**Night Mode Behavior (Quiet Hours):**
+- **Display:** Remains ON 24/7 for continuous monitoring
+- **LEDs:** Remain ON 24/7 to show status
+- **Notifications:** All Telegram and Alexa notifications are suppressed during configured hours
+- **Buttons:** Work normally at all times
+- **Timers:** Continue running continuously (not reset at end of night mode)
+- **Disable:** Set both hours to `-1` to disable quiet hours entirely
 
 ### 5. Configure Display Mode (Optional)
 
@@ -300,15 +301,17 @@ Telegram is completely free and provides instant push notifications to your phon
 
 The device sends notifications based on LED status (using your dog's name from DOG_NAME):
 
-1. **Yellow LED turns on (90 minutes)** - All users:
-   - Message: "{DOG_NAME} should go out soon (Xh Ym since last pee)"
-   - Example: "Fish should go out soon (1h 30m since last pee)"
+1. **Yellow LED turns on (150 minutes / 2.5 hours by default)** - All users:
+   - Message: "{DOG_NAME} should go out soon (last pee at X:XX PM)"
+   - Example: "Fish should go out soon (last pee at 1:30 PM)"
    - 1-hour cooldown between yellow notifications
+   - Threshold configurable via `/setyellow <minutes>` command
 
-2. **Red LED turns on (3 hours)** - All users:
-   - Message: "{DOG_NAME} needs to pee NOW! (Xh Ym since last pee)"
-   - Example: "Fish needs to pee NOW! (3h 15m since last pee)"
+2. **Red LED turns on (240 minutes / 4 hours by default)** - All users:
+   - Message: "{DOG_NAME} needs to pee NOW! (last pee at X:XX PM)"
+   - Example: "Fish needs to pee NOW! (last pee at 1:30 PM)"
    - 1-hour cooldown between red notifications
+   - Threshold configurable via `/setred <minutes>` command
 
 3. **Red LED turns off (dog peed)** - All users:
    - Message: "All clear! {DOG_NAME} has peed."
@@ -338,11 +341,14 @@ You can remotely control the timers by sending commands to your Telegram bot! Th
 - `/setpee <minutes>` - Set pee timer to X minutes ago
 - `/setpoo <minutes>` - Set poop timer to X minutes ago
 - `/setout <minutes>` - Set outside timer to X minutes ago
+- `/setall <minutes>` - Set ALL timers to X minutes ago
 - Example: `/setpee 90` sets pee timer to 90 minutes ago
 
-*Information:*
-- `/status` - Get current status of all timers
-- `/help` - Show all available commands
+*Configure LED Thresholds:*
+- `/setyellow <minutes>` - Set yellow LED warning threshold (default: 150)
+- `/setred <minutes>` - Set red LED urgent threshold (default: 240)
+- Example: `/setyellow 120` makes yellow LED turn on at 2 hours
+- Changes persist until device reboot
 
 **How It Works:**
 1. Open your Telegram chat with your bot
@@ -504,19 +510,23 @@ If your computer doesn't recognize the WeMos D1 Mini:
 
 LEDs are based on the **Pee timer only**:
 
-- **Green**: Pee timer < 90 minutes (all good)
-- **Yellow**: Pee timer > 90 minutes (warning)
-- **Red**: Pee timer > 3 hours (urgent)
+- **Green**: Pee timer < 150 minutes / 2.5 hours (all good)
+- **Yellow**: Pee timer > 150 minutes / 2.5 hours (warning) - configurable
+- **Red**: Pee timer > 240 minutes / 4 hours (urgent) - configurable
 
-### Night Mode (Configurable Quiet Hours)
+Thresholds can be adjusted:
+- In `config.h`: YELLOW_THRESHOLD and RED_THRESHOLD
+- Via Telegram: `/setyellow <minutes>` and `/setred <minutes>` (runtime only)
 
-During night mode (default: 11pm - 5am, configurable in secrets.h):
+### Quiet Hours (Night Mode)
 
-- **Display:** Turns off completely to avoid light disturbance
-- **LEDs:** All status LEDs turn off
+During quiet hours (default: 11pm - 5am, configurable in secrets.h):
+
+- **Display:** Remains ON for continuous monitoring
+- **LEDs:** Remain ON to show current status
 - **Notifications:** All Telegram and Alexa notifications are suppressed (no alerts during sleep hours)
-- **Buttons:** Still functional - pressing any button wakes display for 10 seconds AND logs the event
-- **Timers:** Continue running accurately in the background
+- **Buttons:** Work normally at all times
+- **Timers:** Continue running continuously (not reset when quiet hours end)
 - **Configuration:** Hours can be customized in secrets.h, or disabled entirely by setting both to -1
 
 ### Display Views
@@ -600,10 +610,13 @@ This gives you both perspectives - elapsed time and actual timestamps.
 - **Telegram Bots**: Up to 3 user configurations
 
 **Edit `config.h` for hardware/timing settings:**
-- **Timer Thresholds**: Adjust yellow/red LED warning times
+- **LED Thresholds**: Adjust default yellow/red LED warning times (YELLOW_THRESHOLD, RED_THRESHOLD)
 - **Timezone**: Adjust NTP timezone offset
 - **Debounce Delay**: Adjust button sensitivity
 - **Pin Mappings**: Change hardware connections
+
+**Runtime Configuration via Telegram:**
+- **LED Thresholds**: `/setyellow <minutes>` and `/setred <minutes>` (persists until reboot)
 
 ## Power Requirements
 

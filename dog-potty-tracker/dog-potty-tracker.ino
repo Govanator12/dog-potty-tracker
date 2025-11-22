@@ -137,14 +137,8 @@ void loop() {
 
   // Check if we just exited night mode
   if (wasInNightMode && !nightMode) {
-    // Just exited night mode - reset all timers (assume dog went out in the morning)
-    DEBUG_PRINTLN("Exited night mode - resetting all timers");
-    timerManager.resetOutside();
-    timerManager.resetPee();
-    timerManager.resetPoop();
-    saveToEEPROM();  // Save the reset timers immediately
-
-    // Reset notification cooldown timers
+    // Just exited night mode - reset notification cooldown timers
+    DEBUG_PRINTLN("Exited night mode - resetting notification timers");
     lastRedNotificationTime = millis();  // Prevent immediate red alert
     lastYellowNotificationTime = millis();  // Prevent immediate yellow alert
     redLEDWasOn = false;  // Reset LED tracking
@@ -153,16 +147,8 @@ void loop() {
 
   wasInNightMode = nightMode;  // Track for next loop iteration
 
-  if (nightMode) {
-    handleNightMode();
-  } else {
-    // Normal operation - ensure display and LEDs are on
-    if (temporaryWake) {
-      temporaryWake = false;
-    }
-    displayManager.setNightMode(false);
-    ledController.setNightMode(false);
-  }
+  // Note: Night mode no longer turns off display or LEDs
+  // It only suppresses notifications during quiet hours
 
   // Update LED status based on timers (always called, but LEDs are managed by nightMode flag internally)
   ledController.update(&timerManager);
@@ -186,16 +172,6 @@ void loop() {
 void onButtonShortPress(Button button) {
   DEBUG_PRINT("Short press: ");
   DEBUG_PRINTLN(button);
-
-  // Handle night mode wake
-  bool nightMode = isNightMode();
-  if (nightMode) {
-    // Wake display for 10 seconds
-    temporaryWake = true;
-    nightModeWakeUntil = millis() + NIGHT_MODE_WAKE_DURATION;
-    displayManager.setDisplayOn(true);
-    ledController.setNightMode(false);  // Show LEDs briefly
-  }
 
   // Process button action
   switch (button) {

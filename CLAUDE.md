@@ -487,18 +487,23 @@ POO: 2:15 PM      -> Yellow section (top 16px)
 LEDs are based on the **Pee timer only** (Outside and Poop timers do not affect LED status).
 
 **Green LED:**
-- ON: Pee timer < 90 minutes (default good state)
+- ON: Pee timer < YELLOW_THRESHOLD (default good state)
 - OFF: Yellow or Red condition is active
 
 **Yellow LED (Warning):**
-- ON: Pee timer > 90 minutes
+- ON: Pee timer > YELLOW_THRESHOLD (default: 150 minutes / 2.5 hours)
 - OFF: Pee timer below warning threshold
 - Overrides: Green LED turns off when Yellow is on
 
 **Red LED (Urgent):**
-- ON: Pee timer > 3 hours (180 minutes)
+- ON: Pee timer > RED_THRESHOLD (default: 240 minutes / 4 hours)
 - OFF: Pee timer below urgent threshold
 - Overrides: Green and Yellow LEDs turn off when Red is on
+
+**Configurable Thresholds:**
+- Thresholds can be changed in config.h (YELLOW_THRESHOLD and RED_THRESHOLD)
+- Can also be changed at runtime via Telegram commands (/setyellow and /setred)
+- Runtime changes persist until device reboot
 
 **Priority:**
 1. Check Red condition first (highest priority)
@@ -509,12 +514,12 @@ LEDs are based on the **Pee timer only** (Outside and Poop timers do not affect 
 
 **Implementation pseudocode:**
 ```cpp
-if (peeTimer > 180) {  // 3 hours in minutes
+if (peeTimer > redThreshold) {
     // RED - Urgent
     setLED(RED, HIGH);
     setLED(YELLOW, LOW);
     setLED(GREEN, LOW);
-} else if (peeTimer > 90) {  // 90 minutes
+} else if (peeTimer > yellowThreshold) {
     // YELLOW - Warning
     setLED(RED, LOW);
     setLED(YELLOW, HIGH);
@@ -530,57 +535,50 @@ if (peeTimer > 180) {  // 3 hours in minutes
 **LED Behavior:**
 - Solid (not blinking) for simplicity
 - Immediate update when timer thresholds crossed
-- LEDs turn off during night mode (11pm-5am)
+- LEDs remain on 24/7 (night mode only affects notifications, not display/LEDs)
 
-### Night Mode (11pm - 5am)
+### Night Mode & Quiet Hours
 
-**Automatic Behavior:**
-- At 11:00 PM: Display turns off, LEDs turn off
-- At 5:00 AM: Display turns on, LEDs resume normal operation
+**Night Mode Configuration:**
+- Configured via NIGHT_MODE_START_HOUR and NIGHT_MODE_END_HOUR in secrets.h
+- Default: 11pm - 5am
 - Requires NTP time sync to function
-- If no WiFi/time: Night mode disabled (always on)
+- If no WiFi/time: Night mode disabled
 
-**Button Behavior During Night Mode:**
-- Button press: Wakes display AND logs event simultaneously
-- Display shows confirmation briefly
-- Screen stays awake for 10 seconds
-- After 10 seconds: Display turns back off automatically
-- Timers continue running in background
+**Current Behavior:**
+- Night mode ONLY affects notifications (quiet hours)
+- Display and LEDs remain ON 24/7
+- Timers continue running normally
+- Buttons work normally at all times
+
+**Notification Quiet Hours:**
+- During night mode hours, Telegram/Voice Monkey notifications are suppressed
+- Prevents alerts from waking users during sleep hours
+- Yellow and red LED state changes are not announced via notifications
+- Normal notification behavior resumes when night mode ends
 
 **Implementation:**
 ```cpp
 bool isNightMode() {
+    if (!wifiManager.isTimeSynced()) {
+        return false;
+    }
     time_t now = time(nullptr);
     struct tm* t = localtime(&now);
     int hour = t->tm_hour;
-    return (hour >= 23 || hour < 5);  // 11pm to 5am
+    return (hour >= NIGHT_MODE_START_HOUR || hour < NIGHT_MODE_END_HOUR);
 }
 
-// In main loop
-if (isNightMode() && !temporaryWake) {
-    display.ssd1306_command(SSD1306_DISPLAYOFF);
-    setAllLEDs(LOW);
-}
-
-// On button press during night mode
-if (isNightMode() && buttonPressed) {
-    logEvent(button);  // Log the event
-    temporaryWake = true;
-    wakeUntil = millis() + 10000;  // 10 seconds
-    display.ssd1306_command(SSD1306_DISPLAYON);
-}
-
-// Check if temporary wake expired
-if (temporaryWake && millis() > wakeUntil) {
-    temporaryWake = false;
-    display.ssd1306_command(SSD1306_DISPLAYOFF);
+bool isQuietHours() {
+    // Used for notification suppression
+    return isNightMode();
 }
 ```
 
-**Display Behavior:**
-- No gradual dimming (instant on/off)
-- Display power management via SSD1306 commands
-- OLED lifetime preservation (turns off when not needed)
+**Design Note:**
+- Previous implementation turned off display and LEDs during night mode
+- Changed to keep display/LEDs on 24/7 for continuous monitoring
+- Timers are NOT reset when night mode ends (timers run continuously)
 
 ### Data Persistence
 
@@ -1025,11 +1023,11 @@ uint8_t calculateChecksum(PersistentData* data) {
 #define VIEW_ROTATION_INTERVAL 5000  // milliseconds
 #define NIGHT_MODE_WAKE_DURATION 10000  // milliseconds
 
-// Timer Thresholds (in minutes)
-#define YELLOW_PEE_THRESHOLD 90      // 1.5 hours
-#define YELLOW_POOP_THRESHOLD 150    // 2.5 hours
-#define RED_PEE_THRESHOLD 150        // 2.5 hours
-#define RED_POOP_THRESHOLD 300       // 5 hours
+// LED Alert Thresholds (in minutes)
+// Yellow LED turns on after this many minutes since last pee
+// Red LED turns on after this many minutes since last pee
+#define YELLOW_THRESHOLD 150      // 2.5 hours - warning alert
+#define RED_THRESHOLD 240         // 4 hours - urgent alert
 
 // Night Mode Configuration
 #define NIGHT_MODE_START_HOUR 23  // 11 PM
