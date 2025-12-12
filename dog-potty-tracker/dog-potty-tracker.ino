@@ -45,6 +45,11 @@ bool redAlertActive = false;
 bool wasInNightMode = false;
 bool startupNotificationSent = false;
 
+// Queued "all clear" notification (delayed to prevent blocking)
+bool allClearPending = false;
+unsigned long allClearSendTime = 0;
+const unsigned long ALL_CLEAR_DELAY = 10000;  // 10 second delay before sending
+
 // Runtime LED thresholds (can be modified via Telegram commands)
 unsigned int yellowThreshold = YELLOW_THRESHOLD;
 unsigned int redThreshold = RED_THRESHOLD;
@@ -56,6 +61,7 @@ bool isQuietHours();
 void handleNightMode();
 void saveToEEPROM();
 void checkAndSendNotification();
+void processQueuedAllClear();
 void sendStartupNotification();
 void handleTelegramCommand(String chatId, String command);
 
@@ -156,6 +162,9 @@ void loop() {
   // Check if we should send notifications (yellow/red LED status changes)
   checkAndSendNotification();
 
+  // Process any queued all-clear notification (delayed send)
+  processQueuedAllClear();
+
   // Update display (handles view rotation)
   displayManager.update(&timerManager, wifiManager.isTimeSynced());
 
@@ -246,6 +255,60 @@ void handleNightMode() {
 
 void saveToEEPROM() {
   storage.save(&timerManager);
+}
+
+void processQueuedAllClear() {
+  // Check if there's a pending all clear notification to send
+  if (!allClearPending) {
+    return;
+  }
+
+  // Check if it's time to send
+  if (millis() < allClearSendTime) {
+    return;
+  }
+
+  // Clear the pending flag first (so we don't resend on failure)
+  allClearPending = false;
+  DEBUG_PRINTLN("Sending queued all clear notification...");
+
+  String message = "All clear! " + String(DOG_NAME) + " has peed.";
+  int clearSuccessCount = 0;
+
+  // Send to user 1
+  if (strlen(TELEGRAM_BOT_TOKEN_1) > 0 && strlen(TELEGRAM_CHAT_ID_1) > 0) {
+    DEBUG_PRINTLN("Sending all clear to user 1...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, message.c_str())) {
+      clearSuccessCount++;
+    }
+  }
+
+  // Send to user 2
+  if (strlen(TELEGRAM_BOT_TOKEN_2) > 0 && strlen(TELEGRAM_CHAT_ID_2) > 0) {
+    DEBUG_PRINTLN("Sending all clear to user 2...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, message.c_str())) {
+      clearSuccessCount++;
+    }
+  }
+
+  // Send to user 3
+  if (strlen(TELEGRAM_BOT_TOKEN_3) > 0 && strlen(TELEGRAM_CHAT_ID_3) > 0) {
+    DEBUG_PRINTLN("Sending all clear to user 3...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
+      clearSuccessCount++;
+    }
+  }
+
+  // Show feedback on display
+  if (clearSuccessCount > 0) {
+    String feedbackMessage = "All Clear Sent (";
+    feedbackMessage += clearSuccessCount;
+    feedbackMessage += ")";
+    displayManager.showFeedback(feedbackMessage.c_str(), 2000);
+    DEBUG_PRINT("All clear notifications sent successfully to ");
+    DEBUG_PRINT(clearSuccessCount);
+    DEBUG_PRINTLN(" recipient(s)!");
+  }
 }
 
 void checkAndSendNotification() {
@@ -383,47 +446,18 @@ void checkAndSendNotification() {
     }
   }
 
-  // === RED LED TURNED OFF (All Clear notification) ===
+  // === RED LED TURNED OFF (Queue All Clear notification) ===
   if (!redLEDIsOn && redLEDWasOn && redAlertActive) {
-    // Red LED just turned off after being on - send "all clear" to all users
-    String message = "All clear! " + String(DOG_NAME) + " has peed.";
+    // Red LED just turned off after being on - queue "all clear" notification
+    redAlertActive = false;  // Clear the alert state immediately
 
-    int clearSuccessCount = 0;
-
-    // Send to user 1
-    if (strlen(TELEGRAM_BOT_TOKEN_1) > 0 && strlen(TELEGRAM_CHAT_ID_1) > 0) {
-      DEBUG_PRINTLN("Sending all clear to user 1...");
-      if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, message.c_str())) {
-        clearSuccessCount++;
-      }
-    }
-
-    // Send to user 2
-    if (strlen(TELEGRAM_BOT_TOKEN_2) > 0 && strlen(TELEGRAM_CHAT_ID_2) > 0) {
-      DEBUG_PRINTLN("Sending all clear to user 2...");
-      if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, message.c_str())) {
-        clearSuccessCount++;
-      }
-    }
-
-    // Send to user 3
-    if (strlen(TELEGRAM_BOT_TOKEN_3) > 0 && strlen(TELEGRAM_CHAT_ID_3) > 0) {
-      DEBUG_PRINTLN("Sending all clear to user 3...");
-      if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
-        clearSuccessCount++;
-      }
-    }
-
-    // Update status
-    if (clearSuccessCount > 0) {
-      redAlertActive = false;  // Clear the alert state
-      successCount += clearSuccessCount;
-      feedbackMessage = "All Clear Sent (";
-      feedbackMessage += clearSuccessCount;
-      feedbackMessage += ")";
-      DEBUG_PRINT("All clear notifications sent successfully to ");
-      DEBUG_PRINT(clearSuccessCount);
-      DEBUG_PRINTLN(" recipient(s)!");
+    // Only queue notification if enabled in config
+    if (ENABLE_ALL_CLEAR_NOTIFICATION) {
+      allClearPending = true;
+      allClearSendTime = millis() + ALL_CLEAR_DELAY;
+      DEBUG_PRINTLN("All clear notification queued (will send in 10 seconds)");
+    } else {
+      DEBUG_PRINTLN("All clear notification disabled in config");
     }
   }
 
