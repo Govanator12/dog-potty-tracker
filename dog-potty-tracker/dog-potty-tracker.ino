@@ -16,6 +16,7 @@
  */
 
 #include <Wire.h>
+#include <ArduinoOTA.h>
 #include "config.h"
 #include "secrets.h"
 #include "TimerManager.h"
@@ -53,6 +54,9 @@ const unsigned long BUTTON_NOTIFICATION_DELAY = 20000;  // 20 second delay befor
 // Runtime LED thresholds (can be modified via Telegram commands)
 unsigned int yellowThreshold = YELLOW_THRESHOLD;
 unsigned int redThreshold = RED_THRESHOLD;
+
+// OTA update state
+bool otaInProgress = false;
 
 // Function prototypes
 void onButtonShortPress(Button button);
@@ -116,11 +120,60 @@ void setup() {
   // Set up Telegram command handler
   wifiManager.setTelegramCommandCallback(handleTelegramCommand);
 
+  // Set up OTA (Over-The-Air) updates
+  ArduinoOTA.setHostname("dog-potty-tracker");
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+
+  ArduinoOTA.onStart([]() {
+    otaInProgress = true;
+    DEBUG_PRINTLN("OTA Update starting...");
+    displayManager.showFeedback("OTA Update...", 0);  // Show until update completes
+  });
+
+  ArduinoOTA.onEnd([]() {
+    DEBUG_PRINTLN("OTA Update complete!");
+    displayManager.showFeedback("Update Done!", 2000);
+  });
+
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    static int lastPercent = -1;
+    int percent = (progress / (total / 100));
+    if (percent != lastPercent) {
+      DEBUG_PRINT("OTA Progress: ");
+      DEBUG_PRINT(percent);
+      DEBUG_PRINTLN("%");
+      lastPercent = percent;
+    }
+  });
+
+  ArduinoOTA.onError([](ota_error_t error) {
+    otaInProgress = false;
+    DEBUG_PRINT("OTA Error: ");
+    if (error == OTA_AUTH_ERROR) DEBUG_PRINTLN("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) DEBUG_PRINTLN("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) DEBUG_PRINTLN("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) DEBUG_PRINTLN("Receive Failed");
+    else if (error == OTA_END_ERROR) DEBUG_PRINTLN("End Failed");
+    displayManager.showFeedback("OTA Error!", 2000);
+  });
+
+  ArduinoOTA.begin();
+  DEBUG_PRINTLN("OTA ready");
+
   DEBUG_PRINTLN("\nSetup complete!\n");
 }
 
 void loop() {
   unsigned long currentMillis = millis();
+
+  // Handle OTA updates (must be called frequently)
+  ArduinoOTA.handle();
+
+  // Skip network operations during OTA update
+  if (otaInProgress) {
+    delay(10);
+    return;
+  }
 
   // Update WiFi (handles reconnection)
   wifiManager.update();
