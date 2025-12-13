@@ -30,11 +30,29 @@
 #define YELLOW_THRESHOLD 150      // 2.5 hours - warning alert
 #define RED_THRESHOLD 240         // 4 hours - urgent alert
 
-// Night Mode Configuration
-// NOTE: Night mode hours are now configured in secrets.h (not here)
-// These values are kept for backward compatibility but are not used
-// #define NIGHT_MODE_START_HOUR 23  // 11 PM (DEPRECATED - use secrets.h)
-// #define NIGHT_MODE_END_HOUR 5     // 5 AM (DEPRECATED - use secrets.h)
+// Night Mode Configuration (quiet hours - notifications suppressed)
+// Set both to -1 to disable night mode entirely
+#define NIGHT_MODE_START_HOUR 23  // 11 PM (24-hour format: 0-23)
+#define NIGHT_MODE_END_HOUR 5     // 5 AM (24-hour format: 0-23)
+
+// Display Mode Configuration
+// Mode 0: Show elapsed time only (e.g., "OUT: 2h 15m ago")
+// Mode 1: Show timestamps only (e.g., "OUT: 1:30 PM") - requires WiFi/NTP sync
+// Mode 2: Cycle between elapsed and timestamps (default)
+// Mode 3: Rotate through each timer individually with LARGE text (easier to read from distance)
+#define DISPLAY_MODE 2              // 0 = elapsed only, 1 = timestamps only, 2 = cycle, 3 = large rotating
+#define DISPLAY_CYCLE_SECONDS 5.0   // Seconds between view changes (supports decimals)
+
+// Telegram Notification Configuration
+// Button press notifications (physical buttons only, not remote commands)
+// Note: Button notifications are delayed by 3 seconds to prevent blocking
+#define NOTIFY_ON_OUTSIDE false  // Notify when Outside button is pressed
+#define NOTIFY_ON_PEE false      // Notify when Pee button is pressed
+#define NOTIFY_ON_POOP false     // Notify when Poop button is pressed
+
+// LED alert notifications (when timer thresholds are exceeded)
+#define NOTIFY_ON_YELLOW true    // Notify when yellow LED turns on (warning)
+#define NOTIFY_ON_RED true       // Notify when red LED turns on (urgent)
 
 // EEPROM Configuration
 #define EEPROM_SIZE 512
