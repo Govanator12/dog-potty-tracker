@@ -48,7 +48,7 @@ bool startupNotificationSent = false;
 bool buttonNotificationPending = false;
 unsigned long buttonNotificationSendTime = 0;
 String pendingButtonMessage = "";
-const unsigned long BUTTON_NOTIFICATION_DELAY = 3000;  // 3 second delay before sending
+const unsigned long BUTTON_NOTIFICATION_DELAY = 20000;  // 20 second delay before sending
 
 // Runtime LED thresholds (can be modified via Telegram commands)
 unsigned int yellowThreshold = YELLOW_THRESHOLD;
