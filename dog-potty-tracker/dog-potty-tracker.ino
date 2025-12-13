@@ -350,7 +350,7 @@ void checkAndSendNotification() {
   String feedbackMessage = "";
 
   // === YELLOW LED NOTIFICATION (All users) ===
-  if (yellowLEDIsOn && !yellowLEDWasOn) {
+  if (yellowLEDIsOn && !yellowLEDWasOn && NOTIFY_ON_YELLOW) {
     // Yellow LED just turned on - send to all configured users
     unsigned long timeSinceLastYellowNotification = millis() - lastYellowNotificationTime;
 
@@ -409,7 +409,7 @@ void checkAndSendNotification() {
   }
 
   // === RED LED NOTIFICATION (All users) ===
-  if (redLEDIsOn && !redLEDWasOn) {
+  if (redLEDIsOn && !redLEDWasOn && NOTIFY_ON_RED) {
     // Red LED just turned on - send to all configured users
     unsigned long timeSinceLastRedNotification = millis() - lastRedNotificationTime;
 
