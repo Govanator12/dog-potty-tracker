@@ -41,14 +41,14 @@ unsigned long lastRedNotificationTime = 0;
 unsigned long lastYellowNotificationTime = 0;
 bool redLEDWasOn = false;
 bool yellowLEDWasOn = false;
-bool redAlertActive = false;
 bool wasInNightMode = false;
 bool startupNotificationSent = false;
 
-// Queued "all clear" notification (delayed to prevent blocking)
-bool allClearPending = false;
-unsigned long allClearSendTime = 0;
-const unsigned long ALL_CLEAR_DELAY = 10000;  // 10 second delay before sending
+// Queued button press notification (delayed to prevent blocking)
+bool buttonNotificationPending = false;
+unsigned long buttonNotificationSendTime = 0;
+String pendingButtonMessage = "";
+const unsigned long BUTTON_NOTIFICATION_DELAY = 3000;  // 3 second delay before sending
 
 // Runtime LED thresholds (can be modified via Telegram commands)
 unsigned int yellowThreshold = YELLOW_THRESHOLD;
@@ -61,7 +61,8 @@ bool isQuietHours();
 void handleNightMode();
 void saveToEEPROM();
 void checkAndSendNotification();
-void processQueuedAllClear();
+void processQueuedButtonNotification();
+void queueButtonNotification(const char* eventName);
 void sendStartupNotification();
 void handleTelegramCommand(String chatId, String command);
 
@@ -162,8 +163,8 @@ void loop() {
   // Check if we should send notifications (yellow/red LED status changes)
   checkAndSendNotification();
 
-  // Process any queued all-clear notification (delayed send)
-  processQueuedAllClear();
+  // Process any queued button notification (delayed send)
+  processQueuedButtonNotification();
 
   // Update display (handles view rotation)
   displayManager.update(&timerManager, wifiManager.isTimeSynced());
@@ -182,21 +183,30 @@ void onButtonShortPress(Button button) {
   DEBUG_PRINT("Short press: ");
   DEBUG_PRINTLN(button);
 
-  // Process button action
+  // Process button action and queue notification if enabled
   switch (button) {
     case BTN_OUTSIDE:
       timerManager.resetOutside();
       displayManager.showFeedback("Outside!", 1500);
+      if (NOTIFY_ON_OUTSIDE) {
+        queueButtonNotification("went outside");
+      }
       break;
 
     case BTN_PEE:
       timerManager.resetPee();
       displayManager.showFeedback("Pee!", 1500);
+      if (NOTIFY_ON_PEE) {
+        queueButtonNotification("peed");
+      }
       break;
 
     case BTN_POOP:
       timerManager.resetPoop();
       displayManager.showFeedback("Poop!", 1500);
+      if (NOTIFY_ON_POOP) {
+        queueButtonNotification("pooped");
+      }
       break;
   }
 
@@ -257,58 +267,70 @@ void saveToEEPROM() {
   storage.save(&timerManager);
 }
 
-void processQueuedAllClear() {
-  // Check if there's a pending all clear notification to send
-  if (!allClearPending) {
+void queueButtonNotification(const char* eventName) {
+  // Queue a button notification to be sent after a delay
+  // This prevents blocking the device when buttons are pressed rapidly
+  pendingButtonMessage = String(DOG_NAME) + " " + eventName + "!";
+  buttonNotificationPending = true;
+  buttonNotificationSendTime = millis() + BUTTON_NOTIFICATION_DELAY;
+  DEBUG_PRINT("Button notification queued: ");
+  DEBUG_PRINTLN(pendingButtonMessage);
+}
+
+void processQueuedButtonNotification() {
+  // Check if there's a pending button notification to send
+  if (!buttonNotificationPending) {
     return;
   }
 
   // Check if it's time to send
-  if (millis() < allClearSendTime) {
+  if (millis() < buttonNotificationSendTime) {
     return;
   }
 
   // Clear the pending flag first (so we don't resend on failure)
-  allClearPending = false;
-  DEBUG_PRINTLN("Sending queued all clear notification...");
+  buttonNotificationPending = false;
+  DEBUG_PRINTLN("Sending queued button notification...");
 
-  String message = "All clear! " + String(DOG_NAME) + " has peed.";
-  int clearSuccessCount = 0;
+  int successCount = 0;
 
   // Send to user 1
   if (strlen(TELEGRAM_BOT_TOKEN_1) > 0 && strlen(TELEGRAM_CHAT_ID_1) > 0) {
-    DEBUG_PRINTLN("Sending all clear to user 1...");
-    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, message.c_str())) {
-      clearSuccessCount++;
+    DEBUG_PRINTLN("Sending button notification to user 1...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_1, TELEGRAM_CHAT_ID_1, pendingButtonMessage.c_str())) {
+      successCount++;
     }
   }
 
   // Send to user 2
   if (strlen(TELEGRAM_BOT_TOKEN_2) > 0 && strlen(TELEGRAM_CHAT_ID_2) > 0) {
-    DEBUG_PRINTLN("Sending all clear to user 2...");
-    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, message.c_str())) {
-      clearSuccessCount++;
+    DEBUG_PRINTLN("Sending button notification to user 2...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_2, TELEGRAM_CHAT_ID_2, pendingButtonMessage.c_str())) {
+      successCount++;
     }
   }
 
   // Send to user 3
   if (strlen(TELEGRAM_BOT_TOKEN_3) > 0 && strlen(TELEGRAM_CHAT_ID_3) > 0) {
-    DEBUG_PRINTLN("Sending all clear to user 3...");
-    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, message.c_str())) {
-      clearSuccessCount++;
+    DEBUG_PRINTLN("Sending button notification to user 3...");
+    if (wifiManager.sendTelegramNotification(TELEGRAM_BOT_TOKEN_3, TELEGRAM_CHAT_ID_3, pendingButtonMessage.c_str())) {
+      successCount++;
     }
   }
 
   // Show feedback on display
-  if (clearSuccessCount > 0) {
-    String feedbackMessage = "All Clear Sent (";
-    feedbackMessage += clearSuccessCount;
+  if (successCount > 0) {
+    String feedbackMessage = "Notified (";
+    feedbackMessage += successCount;
     feedbackMessage += ")";
-    displayManager.showFeedback(feedbackMessage.c_str(), 2000);
-    DEBUG_PRINT("All clear notifications sent successfully to ");
-    DEBUG_PRINT(clearSuccessCount);
+    displayManager.showFeedback(feedbackMessage.c_str(), 1500);
+    DEBUG_PRINT("Button notifications sent successfully to ");
+    DEBUG_PRINT(successCount);
     DEBUG_PRINTLN(" recipient(s)!");
   }
+
+  // Clear the message
+  pendingButtonMessage = "";
 }
 
 void checkAndSendNotification() {
@@ -432,7 +454,6 @@ void checkAndSendNotification() {
       // Update status
       if (redSuccessCount > 0) {
         lastRedNotificationTime = millis();
-        redAlertActive = true;  // Track that red alert is active
         successCount += redSuccessCount;
         feedbackMessage = "Red Alert Sent (";
         feedbackMessage += redSuccessCount;
@@ -443,21 +464,6 @@ void checkAndSendNotification() {
       }
     } else {
       DEBUG_PRINTLN("Red notification cooldown active - skipping");
-    }
-  }
-
-  // === RED LED TURNED OFF (Queue All Clear notification) ===
-  if (!redLEDIsOn && redLEDWasOn && redAlertActive) {
-    // Red LED just turned off after being on - queue "all clear" notification
-    redAlertActive = false;  // Clear the alert state immediately
-
-    // Only queue notification if enabled in config
-    if (ENABLE_ALL_CLEAR_NOTIFICATION) {
-      allClearPending = true;
-      allClearSendTime = millis() + ALL_CLEAR_DELAY;
-      DEBUG_PRINTLN("All clear notification queued (will send in 10 seconds)");
-    } else {
-      DEBUG_PRINTLN("All clear notification disabled in config");
     }
   }
 
