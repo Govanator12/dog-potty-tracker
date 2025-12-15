@@ -122,7 +122,6 @@ void setup() {
 
   // Set up OTA (Over-The-Air) updates
   ArduinoOTA.setHostname("dog-potty-tracker");
-  ArduinoOTA.setPassword(OTA_PASSWORD);
 
   ArduinoOTA.onStart([]() {
     otaInProgress = true;
