@@ -630,81 +630,99 @@ void handleTelegramCommand(String chatId, String command) {
   }
   // Note: /status command removed - cannot send replies on ESP8266 due to SSL limitations
   // For status with replies, upgrade to Raspberry Pi Pico W (see micropython-pico-w branch)
-  else if (command.startsWith("setpee ")) {
-    // Format: setpee 90 (minutes ago)
-    int minutes = command.substring(7).toInt();
+  else if (command == "setpee" || command.startsWith("setpee ")) {
+    // Format: setpee (reset to now) or setpee 90 (minutes ago)
+    int minutes = 0;
+    if (command.length() > 7) {
+      minutes = command.substring(7).toInt();
+    }
+    time_t now = time(nullptr);
+    time_t targetTime = now - (minutes * 60);
+    timerManager.setTimestamp(TIMER_PEE, targetTime);
+    saveToEEPROM();
     if (minutes > 0) {
-      time_t now = time(nullptr);
-      time_t targetTime = now - (minutes * 60);
-      timerManager.setTimestamp(TIMER_PEE, targetTime);
-      saveToEEPROM();
       response = "Pee timer set to " + String(minutes) + " minutes ago";
-      displayManager.showFeedback("Pee Set (Remote)", 1500);
-      commandRecognized = true;
       DEBUG_PRINT("Pee timer manually set to ");
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "Invalid format. Use: setpee <minutes>\nExample: setpee 90";
+      response = "Pee timer reset to now";
+      DEBUG_PRINTLN("Pee timer reset to now");
     }
+    displayManager.showFeedback("Pee Set (Remote)", 1500);
+    commandRecognized = true;
   }
-  else if (command.startsWith("setpoo ") || command.startsWith("setpoop ")) {
-    // Format: setpoo 120 (minutes ago)
-    int startPos = command.startsWith("setpoo ") ? 7 : 8;
-    int minutes = command.substring(startPos).toInt();
+  else if (command == "setpoo" || command == "setpoop" || command.startsWith("setpoo ") || command.startsWith("setpoop ")) {
+    // Format: setpoo (reset to now) or setpoo 120 (minutes ago)
+    int minutes = 0;
+    if (command.startsWith("setpoo ")) {
+      minutes = command.substring(7).toInt();
+    } else if (command.startsWith("setpoop ")) {
+      minutes = command.substring(8).toInt();
+    }
+    time_t now = time(nullptr);
+    time_t targetTime = now - (minutes * 60);
+    timerManager.setTimestamp(TIMER_POOP, targetTime);
+    saveToEEPROM();
     if (minutes > 0) {
-      time_t now = time(nullptr);
-      time_t targetTime = now - (minutes * 60);
-      timerManager.setTimestamp(TIMER_POOP, targetTime);
-      saveToEEPROM();
       response = "Poop timer set to " + String(minutes) + " minutes ago";
-      displayManager.showFeedback("Poop Set (Remote)", 1500);
-      commandRecognized = true;
       DEBUG_PRINT("Poop timer manually set to ");
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "Invalid format. Use: setpoo <minutes>\nExample: setpoo 120";
+      response = "Poop timer reset to now";
+      DEBUG_PRINTLN("Poop timer reset to now");
     }
+    displayManager.showFeedback("Poop Set (Remote)", 1500);
+    commandRecognized = true;
   }
-  else if (command.startsWith("setout ") || command.startsWith("setoutside ")) {
-    // Format: setout 45 (minutes ago)
-    int startPos = command.startsWith("setout ") ? 7 : 11;
-    int minutes = command.substring(startPos).toInt();
+  else if (command == "setout" || command == "setoutside" || command.startsWith("setout ") || command.startsWith("setoutside ")) {
+    // Format: setout (reset to now) or setout 45 (minutes ago)
+    int minutes = 0;
+    if (command.startsWith("setout ")) {
+      minutes = command.substring(7).toInt();
+    } else if (command.startsWith("setoutside ")) {
+      minutes = command.substring(11).toInt();
+    }
+    time_t now = time(nullptr);
+    time_t targetTime = now - (minutes * 60);
+    timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
+    saveToEEPROM();
     if (minutes > 0) {
-      time_t now = time(nullptr);
-      time_t targetTime = now - (minutes * 60);
-      timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
-      saveToEEPROM();
       response = "Outside timer set to " + String(minutes) + " minutes ago";
-      displayManager.showFeedback("Outside Set (Remote)", 1500);
-      commandRecognized = true;
       DEBUG_PRINT("Outside timer manually set to ");
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "Invalid format. Use: setout <minutes>\nExample: setout 45";
+      response = "Outside timer reset to now";
+      DEBUG_PRINTLN("Outside timer reset to now");
     }
+    displayManager.showFeedback("Outside Set (Remote)", 1500);
+    commandRecognized = true;
   }
-  else if (command.startsWith("setall ")) {
-    // Format: setall 60 (sets all timers to 60 minutes ago)
-    int minutes = command.substring(7).toInt();
+  else if (command == "setall" || command.startsWith("setall ")) {
+    // Format: setall (reset all to now) or setall 60 (sets all timers to 60 minutes ago)
+    int minutes = 0;
+    if (command.length() > 7) {
+      minutes = command.substring(7).toInt();
+    }
+    time_t now = time(nullptr);
+    time_t targetTime = now - (minutes * 60);
+    timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
+    timerManager.setTimestamp(TIMER_PEE, targetTime);
+    timerManager.setTimestamp(TIMER_POOP, targetTime);
+    saveToEEPROM();
     if (minutes > 0) {
-      time_t now = time(nullptr);
-      time_t targetTime = now - (minutes * 60);
-      timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
-      timerManager.setTimestamp(TIMER_PEE, targetTime);
-      timerManager.setTimestamp(TIMER_POOP, targetTime);
-      saveToEEPROM();
       response = "All timers set to " + String(minutes) + " minutes ago";
-      displayManager.showFeedback("All Set (Remote)", 1500);
-      commandRecognized = true;
       DEBUG_PRINT("All timers manually set to ");
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "Invalid format. Use: setall <minutes>\nExample: setall 60";
+      response = "All timers reset to now";
+      DEBUG_PRINTLN("All timers reset to now");
     }
+    displayManager.showFeedback("All Set (Remote)", 1500);
+    commandRecognized = true;
   }
   else if (command.startsWith("setyellow ")) {
     // Format: setyellow 150 (sets yellow threshold to 150 minutes)
