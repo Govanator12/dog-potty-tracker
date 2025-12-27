@@ -44,6 +44,7 @@ bool redLEDWasOn = false;
 bool yellowLEDWasOn = false;
 bool wasInNightMode = false;
 bool startupNotificationSent = false;
+bool alertsEnabledToday = false;  // Alerts disabled until first pee of the day
 
 // Queued button press notification (delayed to prevent blocking)
 bool buttonNotificationPending = false;
@@ -196,10 +197,9 @@ void loop() {
 
   // Check if we just exited night mode
   if (wasInNightMode && !nightMode) {
-    // Just exited night mode - reset notification cooldown timers
-    DEBUG_PRINTLN("Exited night mode - resetting notification timers");
-    lastRedNotificationTime = millis();  // Prevent immediate red alert
-    lastYellowNotificationTime = millis();  // Prevent immediate yellow alert
+    // Just exited night mode - disable alerts until first pee of the day
+    DEBUG_PRINTLN("Exited night mode - alerts disabled until first pee");
+    alertsEnabledToday = false;
     redLEDWasOn = false;  // Reset LED tracking
     yellowLEDWasOn = false;  // Reset LED tracking
   }
@@ -247,6 +247,7 @@ void onButtonShortPress(Button button) {
 
     case BTN_PEE:
       timerManager.resetPee();
+      alertsEnabledToday = true;  // Enable alerts after first pee of the day
       displayManager.showFeedback("Pee!", 1500);
       if (NOTIFY_ON_PEE) {
         queueButtonNotification("peed");
@@ -388,7 +389,11 @@ void processQueuedButtonNotification() {
 void checkAndSendNotification() {
   // Don't send notifications during quiet hours (10pm-7am)
   if (isQuietHours()) {
-    DEBUG_PRINTLN("Quiet hours active - notifications suppressed");
+    return;
+  }
+
+  // Don't send alerts until first pee of the day (after night mode ends)
+  if (!alertsEnabledToday) {
     return;
   }
 
@@ -605,6 +610,7 @@ void handleTelegramCommand(String chatId, String command) {
   // Handle commands (without slash)
   if (command == "pee") {
     timerManager.resetPee();
+    alertsEnabledToday = true;  // Enable alerts after first pee of the day
     displayManager.showFeedback("Pee! (Remote)", 1500);
     saveToEEPROM();
     response = "Pee timer reset!";
@@ -638,6 +644,7 @@ void handleTelegramCommand(String chatId, String command) {
     time_t now = time(nullptr);
     time_t targetTime = now - (minutes * 60);
     timerManager.setTimestamp(TIMER_PEE, targetTime);
+    alertsEnabledToday = true;  // Enable alerts after first pee of the day
     saveToEEPROM();
     if (minutes > 0) {
       response = "Pee timer set to " + String(minutes) + " minutes ago";
@@ -710,6 +717,7 @@ void handleTelegramCommand(String chatId, String command) {
     timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
     timerManager.setTimestamp(TIMER_PEE, targetTime);
     timerManager.setTimestamp(TIMER_POOP, targetTime);
+    alertsEnabledToday = true;  // Enable alerts (pee timer was reset)
     saveToEEPROM();
     if (minutes > 0) {
       response = "All timers set to " + String(minutes) + " minutes ago";

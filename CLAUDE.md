@@ -555,7 +555,13 @@ if (peeTimer > redThreshold) {
 - During night mode hours, Telegram/Voice Monkey notifications are suppressed
 - Prevents alerts from waking users during sleep hours
 - Yellow and red LED state changes are not announced via notifications
-- Normal notification behavior resumes when night mode ends
+
+**First Pee of the Day:**
+- When night mode ends, alert notifications remain disabled
+- Alerts are re-enabled only after the first pee of the day occurs
+- This prevents immediate alert spam in the morning if the timer ran long overnight
+- Pee can be recorded via physical button or Telegram command (/pee, /setpee, /setall)
+- Once enabled, alerts work normally until the next night mode period
 
 **Implementation:**
 ```cpp

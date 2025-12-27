@@ -529,6 +529,9 @@ During quiet hours (default: 11pm - 5am, configurable in secrets.h):
 - **Timers:** Continue running continuously (not reset when quiet hours end)
 - **Configuration:** Hours can be customized in secrets.h, or disabled entirely by setting both to -1
 
+**First Pee of the Day:**
+When night mode ends, alert notifications remain disabled until the first pee of the day is recorded. This prevents getting bombarded with alerts first thing in the morning if the timer ran long overnight. Once you press the Pee button (or use /pee, /setpee, or /setall via Telegram), alerts resume normally.
+
 ### Display Views
 
 The display can show three different modes (configured in `secrets.h`):
