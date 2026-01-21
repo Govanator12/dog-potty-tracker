@@ -10,8 +10,7 @@
 // Data structure for EEPROM storage
 // Use packed attribute to prevent compiler padding
 struct __attribute__((packed)) PersistentData {
-  uint32_t outsideTimestamp;   // Unix epoch time
-  uint32_t peeTimestamp;
+  uint32_t peeTimestamp;       // Unix epoch time
   uint32_t poopTimestamp;
   uint32_t lastSaveTime;
   uint8_t checksum;            // Data integrity check (MUST be last byte)

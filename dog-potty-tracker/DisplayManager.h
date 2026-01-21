@@ -50,7 +50,7 @@ private:
   // Display mode configuration
   int displayMode;           // 0 = elapsed only, 1 = timestamps only, 2 = cycle, 3 = large rotating
   unsigned long cycleInterval;  // Milliseconds between view changes in cycle mode
-  int currentTimer;          // For mode 3: which timer to show (0=outside, 1=pee, 2=poop)
+  int currentTimer;          // For mode 3: which timer to show (0=pee, 1=poop)
 
   // Render views
   void renderElapsedView(TimerManager* timerManager);

@@ -1,15 +1,15 @@
 # Dog Potty Tracker
 
-A hardware device to track your dog's potty activities with three independent timers (Outside, Pee, Poop) displayed on an OLED screen with visual LED status indicators.
+A hardware device to track your dog's potty activities with two independent timers (Pee, Poop) displayed on an OLED screen with visual LED status indicators.
 
 ## Features
 
-- **3 Independent Timers**: Track time since last Outside, Pee, and Poop events
+- **2 Independent Timers**: Track time since last Pee and Poop events
 - **OLED Display**: 0.96" display with auto-rotating views (elapsed time and timestamps)
 - **LED Status Indicators**: Green (all good), Yellow (warning), Red (urgent)
 - **WiFi & NTP Sync**: Automatic time synchronization with automatic DST adjustment
 - **Telegram Notifications**: Free push notifications to unlimited users via Telegram bots
-- **Remote Commands**: Control timers remotely via Telegram (/pee, /poo, /out, /setpee, /setall, /setyellow, /setred)
+- **Remote Commands**: Control timers remotely via Telegram (/pee, /poo, /setpee, /setall, /setyellow, /setred)
 - **Manual Timer Setting**: Set timers to specific times in the past (e.g., `/setpee 90` for 90 minutes ago)
 - **Configurable LED Thresholds**: Adjust warning/urgent alert times via Telegram commands
 - **Alexa Announcements**: Optional integration with Alexa via Voice Monkey for voice alerts
@@ -23,7 +23,7 @@ A hardware device to track your dog's potty activities with three independent ti
 graph TB
     subgraph "Hardware Layer"
         OLED[OLED Display<br/>SSD1306 128x64]
-        BTN1[Outside Button<br/>D5]
+        BTN1[Both Button<br/>D5]
         BTN2[Pee Button<br/>D6]
         BTN3[Poop Button<br/>D7]
         LED1[Green LED<br/>D0]
@@ -36,7 +36,7 @@ graph TB
         MAIN[Main Loop<br/>dog-potty-tracker.ino]
 
         subgraph "Managers"
-            TIMER[TimerManager<br/>Track 3 timers]
+            TIMER[TimerManager<br/>Track 2 timers]
             DISPLAY[DisplayManager<br/>Render views]
             BUTTON[ButtonHandler<br/>Debounce & events]
             LEDCTL[LEDController<br/>Status logic]
@@ -106,7 +106,7 @@ graph TB
 
 - **WeMos D1 Mini** (ESP8266 ESP-12F) - micro USB, WiFi-enabled
 - **UCTRONICS 0.96" OLED** (SSD1306, 128x64, I2C)
-- **3x Tactile Push Buttons** (Outside, Pee, Poop)
+- **3x Tactile Push Buttons** (Both, Pee, Poop)
 - **3x LEDs** (Green, Yellow, Red - standard 5mm)
 - **3x 10k-ohm Resistors** (button pull-down)
 - **3x 220-330 ohm Resistors** (LED current limiting)
@@ -125,7 +125,7 @@ Approximately $10-15 for all components
 - SDA -> D2 (GPIO4)
 
 ### Buttons
-- Button 1 (Outside) -> D5 (GPIO14) + 10k-ohm resistor to GND
+- Button 1 (Both) -> D5 (GPIO14) + 10k-ohm resistor to GND
 - Button 2 (Pee) -> D6 (GPIO12) + 10k-ohm resistor to GND
 - Button 3 (Poop) -> D7 (GPIO13) + 10k-ohm resistor to GND
 - All buttons: One leg to 3V3, other leg to pin
@@ -202,7 +202,6 @@ The display can operate in three different modes, configured in `secrets.h`:
 
 - **Mode 0 (Elapsed Time Only)**: Display always shows time since last event
   ```
-  OUT: 2h 15m ago
   PEE: 0h 45m ago
   POO: 1h 30m ago
   3:45 PM
@@ -210,7 +209,6 @@ The display can operate in three different modes, configured in `secrets.h`:
 
 - **Mode 1 (Timestamps Only)**: Display always shows actual time of event (requires WiFi/NTP sync)
   ```
-  OUT: 1:30 PM
   PEE: 3:00 PM
   POO: 2:15 PM
   3:45 PM
@@ -225,18 +223,13 @@ The display can operate in three different modes, configured in `secrets.h`:
   - Each timer displays: timer name, elapsed time, and timestamp
   - Example (rotates every X seconds):
   ```
-  OUTSIDE          <- Large text (2x size)
-  2h 15m ago       <- Large text (2x size)
-  At: 1:30 PM      <- Normal text
-  ```
-  ```
-  PEE              <- Large text (2x size)
-  0h 45m ago       <- Large text (2x size)
+  PEE              <- Large text (3x size)
+  0h 45m           <- Large text (3x size)
   At: 3:00 PM      <- Normal text
   ```
   ```
-  POOP             <- Large text (2x size)
-  1h 30m ago       <- Large text (2x size)
+  POOP             <- Large text (3x size)
+  1h 30m           <- Large text (3x size)
   At: 2:15 PM      <- Normal text
   ```
 
@@ -335,13 +328,11 @@ You can remotely control the timers by sending commands to your Telegram bot! Th
 *Reset Timers (set to now):*
 - `/pee` - Reset the pee timer remotely
 - `/poo` or `/poop` - Reset the poop timer remotely
-- `/out` or `/outside` - Reset the outside timer remotely
 
 *Set Timers (manually specify minutes ago):*
 - `/setpee <minutes>` - Set pee timer to X minutes ago
 - `/setpoo <minutes>` - Set poop timer to X minutes ago
-- `/setout <minutes>` - Set outside timer to X minutes ago
-- `/setall <minutes>` - Set ALL timers to X minutes ago
+- `/setall <minutes>` - Set BOTH timers to X minutes ago
 - Example: `/setpee 90` sets pee timer to 90 minutes ago
 
 *Configure LED Thresholds:*
@@ -363,12 +354,10 @@ You can remotely control the timers by sending commands to your Telegram bot! Th
 Send `/status` to get:
 ```
 Fish Status:
-Outside: 2h 15m ago
 Pee: 0h 45m ago
 Poop: 1h 30m ago
 
 Last times:
-Outside: 1:30 PM
 Pee: 4:00 PM
 Poop: 3:15 PM
 ```
@@ -483,7 +472,7 @@ If your computer doesn't recognize the WeMos D1 Mini:
 
 1. Device will attempt to connect to WiFi (displays "Connecting WiFi...")
 2. Once connected, it will sync time via NTP (displays "Syncing time...")
-3. Display will show all three timers counting up from 00h 00m
+3. Display will show both timers counting up from 00h 00m
 4. Green LED should turn on (all good status)
 5. Display behavior depends on your DISPLAY_MODE setting:
    - **Mode 0**: Shows elapsed time only (e.g., "2h 15m ago")
@@ -494,9 +483,9 @@ If your computer doesn't recognize the WeMos D1 Mini:
 
 ### Button Functions
 
-**Outside Button**
-- Logs "went outside" event
-- Resets Outside timer only
+**Both Button**
+- Logs "peed and pooped" event
+- Resets both Pee and Poop timers simultaneously
 
 **Pee Button**
 - Logs "pee" event
@@ -530,7 +519,7 @@ During quiet hours (default: 11pm - 5am, configurable in secrets.h):
 - **Configuration:** Hours can be customized in secrets.h, or disabled entirely by setting both to -1
 
 **First Pee of the Day:**
-When night mode ends, alert notifications remain disabled until the first pee of the day is recorded. This prevents getting bombarded with alerts first thing in the morning if the timer ran long overnight. Once you press the Pee button (or use /pee, /setpee, or /setall via Telegram), alerts resume normally.
+When night mode ends, alert notifications remain disabled until the first pee of the day is recorded. This prevents getting bombarded with alerts first thing in the morning if the timer ran long overnight. Once you press the Pee or Both button (or use /pee, /setpee, or /setall via Telegram), alerts resume normally.
 
 ### Display Views
 
@@ -538,7 +527,6 @@ The display can show three different modes (configured in `secrets.h`):
 
 **Mode 0 - Elapsed Time Only**
 ```
-OUT: 2h 15m ago
 PEE: 0h 45m ago
 POO: 1h 30m ago
 3:45 PM
@@ -546,7 +534,6 @@ POO: 1h 30m ago
 
 **Mode 1 - Timestamps Only**
 ```
-OUT: 1:30 PM
 PEE: 3:00 PM
 POO: 2:15 PM
 3:45 PM

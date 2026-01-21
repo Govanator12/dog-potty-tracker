@@ -5,7 +5,7 @@
 #include "config.h"
 
 enum Button {
-  BTN_OUTSIDE = 0,
+  BTN_BOTH = 0,   // Resets both Pee and Poop timers
   BTN_PEE = 1,
   BTN_POOP = 2
 };

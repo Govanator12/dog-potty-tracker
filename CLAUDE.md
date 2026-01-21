@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Dog Potty Tracker - A hardware device to track your dog's potty activities with three independent timers (Outside, Pee, Poop) displayed on an OLED screen with visual LED status indicators.
+Dog Potty Tracker - A hardware device to track your dog's potty activities with two independent timers (Pee, Poop) displayed on an OLED screen with visual LED status indicators.
 
 ### Hardware Components
 
@@ -21,7 +21,7 @@ Dog Potty Tracker - A hardware device to track your dog's potty activities with 
 - Voltage: 3.3V-5V DC
 
 **Input:**
-- 3x tactile push buttons (Outside, Pee, Poop)
+- 3x tactile push buttons (Both, Pee, Poop)
 - Standard momentary push buttons
 
 **Output:**
@@ -67,7 +67,7 @@ D8 (GPIO15)            GND
 - SDA -> D2 (GPIO4)
 
 **Buttons (Active HIGH with pull-down resistors):**
-- Button 1 (Outside) -> D5 (GPIO14)
+- Button 1 (Both) -> D5 (GPIO14)
 - Button 2 (Pee) -> D6 (GPIO12)
 - Button 3 (Poop) -> D7 (GPIO13)
 - Each button: One leg to pin, other leg to 3V3
@@ -129,7 +129,7 @@ TX (B8)                  8     RST
 4. SCL (Pin 3, row 14, col J) → Jumper wire to row 6, column B (D1 pin at B6)
 5. SDA (Pin 4, row 13, col J) → Jumper wire to row 5, column B (D2 pin at B5)
 
-**Button 1 (Outside) - Rows 18-20 (physical size ~17-21):**
+**Button 1 (Both) - Rows 18-20 (physical size ~17-21):**
 1. Place button across center divider (legs in columns E and F)
 2. Button pins occupy rows 18-20
 3. Button leg 1 (col E, row 18) → Jumper to positive rail (3V3)
@@ -371,9 +371,8 @@ Without WiFi:
 **View A - Elapsed Time (5 seconds):**
 ```
 
-OUT: 2h 15m ago 
-PEE: 0h 45m ago 
-POO: 1h 30m ago 
+PEE: 0h 45m ago
+POO: 1h 30m ago
 [No WiFi]        -> Instead of current time
 
 ```
@@ -381,9 +380,8 @@ POO: 1h 30m ago
 **View B - Timestamps (5 seconds):**
 ```
 
-OUT: 2h 15m ago 
-PEE: 0h 45m ago 
-POO: 1h 30m ago 
+PEE: 0h 45m ago
+POO: 1h 30m ago
 [No WiFi]        -> Same as View A when disconnected
 
 ```
@@ -392,28 +390,22 @@ When WiFi is disconnected, timestamp view is not shown since timestamps are unre
 
 ## Core Features
 
-### Three Timer System
+### Two Timer System
 
-**Timer 1: Outside**
-- Tracks time since dog last went outside
-- Reset by: Pressing Outside button
-- Also reset by: Pressing Pee or Poop buttons (since dog went outside to do those)
-
-**Timer 2: Last Pee**
+**Timer 1: Last Pee**
 - Tracks time since dog last peed
-- Reset by: Pressing Pee button
-- Also reset by: Pressing Poop button if combined event
+- Reset by: Pressing Pee button or Both button
 
-**Timer 3: Last Poop**
+**Timer 2: Last Poop**
 - Tracks time since dog last pooped
-- Reset by: Pressing Poop button
+- Reset by: Pressing Poop button or Both button
 
 ### Button Logic
 
-**Button 1 (Outside):**
-- Action: Log "went outside" event
-- Resets: Outside timer only
-- Use case: Took dog out but didn't see them go
+**Button 1 (Both):**
+- Action: Log "peed and pooped" event
+- Resets: Both Pee and Poop timers simultaneously
+- Use case: Dog did both activities at once
 
 **Button 2 (Pee):**
 - Action: Log "pee" event
@@ -444,20 +436,18 @@ When WiFi is disconnected, timestamp view is not shown since timestamps are unre
 **View A - Elapsed Time (5 seconds):**
 ```
 
-OUT: 2h 15m ago   -> Simple text labels
-PEE: 0h 45m ago   -> No emojis/icons
-POO: 1h 30m ago   -> Yellow section (top 16px)
-3:45 PM           -> Current time, Blue section (bottom 48px)
+PEE: 0h 45m ago   -> Simple text labels
+POO: 1h 30m ago   -> No emojis/icons
+3:45 PM           -> Current time
 
 ```
 
 **View B - Timestamps (5 seconds):**
 ```
 
-OUT: 1:30 PM      -> Actual time of event
-PEE: 3:00 PM      -> Requires NTP sync
-POO: 2:15 PM      -> Yellow section (top 16px)
-3:45 PM           -> Current time, Blue section (bottom 48px)
+PEE: 3:00 PM      -> Actual time of event
+POO: 2:15 PM      -> Requires NTP sync
+3:45 PM           -> Current time
 
 ```
 
@@ -470,7 +460,7 @@ POO: 2:15 PM      -> Yellow section (top 16px)
 **Text Rendering:**
 - Use Adafruit_GFX built-in fonts
 - No emoji support (monochrome bitmap display)
-- Simple ASCII text labels: "OUT", "PEE", "POO"
+- Simple ASCII text labels: "PEE", "POO"
 - Font size: Small/medium for readability
 
 **Time Format:**
@@ -484,7 +474,7 @@ POO: 2:15 PM      -> Yellow section (top 16px)
 
 **Status Determination (checked every loop):**
 
-LEDs are based on the **Pee timer only** (Outside and Poop timers do not affect LED status).
+LEDs are based on the **Pee timer only** (Poop timer does not affect LED status).
 
 **Green LED:**
 - ON: Pee timer < YELLOW_THRESHOLD (default good state)
@@ -560,7 +550,7 @@ if (peeTimer > redThreshold) {
 - When night mode ends, alert notifications remain disabled
 - Alerts are re-enabled only after the first pee of the day occurs
 - This prevents immediate alert spam in the morning if the timer ran long overnight
-- Pee can be recorded via physical button or Telegram command (/pee, /setpee, /setall)
+- Pee can be recorded via physical Pee or Both button, or Telegram command (/pee, /setpee, /setall)
 - Once enabled, alerts work normally until the next night mode period
 
 **Implementation:**
@@ -589,7 +579,7 @@ bool isQuietHours() {
 ### Data Persistence
 
 **What to Save:**
-- All three timer start timestamps (epoch time)
+- Both timer start timestamps (epoch time)
 - Last known good WiFi connection state
 - Display view preference (optional)
 
@@ -602,8 +592,7 @@ bool isQuietHours() {
 **EEPROM Structure:**
 ```cpp
 struct PersistentData {
-    uint32_t outsideTimestamp;   // Unix epoch time
-    uint32_t peeTimestamp;
+    uint32_t peeTimestamp;       // Unix epoch time
     uint32_t poopTimestamp;
     uint32_t lastSaveTime;
     uint8_t checksum;            // Data integrity check
@@ -720,9 +709,9 @@ void loop() {
 **Class: TimerManager**
 
 **Responsibilities:**
-- Track three timer start times (epoch timestamps)
+- Track two timer start times (epoch timestamps)
 - Calculate elapsed time for each timer
-- Reset individual or multiple timers
+- Reset individual or both timers
 - Provide formatted strings for display
 
 **Key methods:**
@@ -730,14 +719,13 @@ void loop() {
 class TimerManager {
 public:
     void reset(Timer timer);              // Reset specific timer
-    void resetMultiple(Timer* timers);    // Reset multiple timers
+    void resetBoth();                     // Reset both timers at once
     unsigned long getElapsed(Timer timer); // Get elapsed time in seconds
     String getElapsedFormatted(Timer timer); // "2h 15m ago"
     String getTimestampFormatted(Timer timer); // "1:30 PM"
     time_t getTimestamp(Timer timer);     // Raw epoch time
 
 private:
-    time_t outsideStart;
     time_t peeStart;
     time_t poopStart;
 };
@@ -823,26 +811,19 @@ void renderElapsedView(TimerData timers) {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
 
-    // Line 1: Outside timer
+    // Line 1: Pee timer
     display.setCursor(0, 0);
-    display.print("OUT: ");
-    display.print(timers.outsideElapsed);
-
-    // Line 2: Pee timer
-    display.setCursor(0, 16);
     display.print("PEE: ");
     display.print(timers.peeElapsed);
 
-    // Line 3: Poop timer
-    display.setCursor(0, 32);
+    // Line 2: Poop timer
+    display.setCursor(0, 20);
     display.print("POO: ");
     display.print(timers.poopElapsed);
 
-    // Line 4: Current time or status
+    // Line 3: Current time or status
     display.setCursor(0, 48);
-    display.print("[");
     display.print(getCurrentTimeString());
-    display.print("]");
 
     display.display();
 }
@@ -1009,7 +990,7 @@ uint8_t calculateChecksum(PersistentData* data) {
 // Pin Definitions
 #define PIN_OLED_SCL D1
 #define PIN_OLED_SDA D2
-#define PIN_BTN_OUTSIDE D5
+#define PIN_BTN_BOTH D5
 #define PIN_BTN_PEE D6
 #define PIN_BTN_POOP D7
 #define PIN_LED_GREEN D0
@@ -1102,8 +1083,8 @@ void testButtons() {
     DEBUG_PRINTLN("Button Test Mode");
     DEBUG_PRINTLN("Press each button...");
 
-    if (digitalRead(PIN_BTN_OUTSIDE) == HIGH) {
-        DEBUG_PRINTLN("Outside button pressed");
+    if (digitalRead(PIN_BTN_BOTH) == HIGH) {
+        DEBUG_PRINTLN("Both button pressed");
     }
     // Repeat for other buttons
 }

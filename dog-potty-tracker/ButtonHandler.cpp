@@ -12,7 +12,7 @@ ButtonHandler::ButtonHandler() {
 
 void ButtonHandler::begin() {
   // Set button pins as INPUT (with external pull-down resistors)
-  pinMode(PIN_BTN_OUTSIDE, INPUT);
+  pinMode(PIN_BTN_BOTH, INPUT);
   pinMode(PIN_BTN_PEE, INPUT);
   pinMode(PIN_BTN_POOP, INPUT);
 
@@ -20,7 +20,7 @@ void ButtonHandler::begin() {
 }
 
 void ButtonHandler::update() {
-  checkButton(BTN_OUTSIDE);
+  checkButton(BTN_BOTH);
   checkButton(BTN_PEE);
   checkButton(BTN_POOP);
 }
@@ -64,14 +64,14 @@ bool ButtonHandler::isPressed(uint8_t pin) {
 
 uint8_t ButtonHandler::getPin(Button button) {
   switch (button) {
-    case BTN_OUTSIDE:
-      return PIN_BTN_OUTSIDE;
+    case BTN_BOTH:
+      return PIN_BTN_BOTH;
     case BTN_PEE:
       return PIN_BTN_PEE;
     case BTN_POOP:
       return PIN_BTN_POOP;
     default:
-      return PIN_BTN_OUTSIDE;
+      return PIN_BTN_BOTH;
   }
 }
 

@@ -10,7 +10,6 @@ void Storage::begin() {
 
 void Storage::save(TimerManager* timerManager) {
   // Populate data structure
-  data.outsideTimestamp = (uint32_t)timerManager->getTimestamp(TIMER_OUTSIDE);
   data.peeTimestamp = (uint32_t)timerManager->getTimestamp(TIMER_PEE);
   data.poopTimestamp = (uint32_t)timerManager->getTimestamp(TIMER_POOP);
   data.lastSaveTime = (uint32_t)time(nullptr);
@@ -31,8 +30,6 @@ void Storage::save(TimerManager* timerManager) {
   EEPROM.commit();
 
   DEBUG_PRINTLN("Storage: Data saved to EEPROM successfully");
-  DEBUG_PRINT("  Outside: ");
-  DEBUG_PRINTLN(data.outsideTimestamp);
   DEBUG_PRINT("  Pee: ");
   DEBUG_PRINTLN(data.peeTimestamp);
   DEBUG_PRINT("  Poop: ");
@@ -60,8 +57,6 @@ bool Storage::load(TimerManager* timerManager) {
 
   if (data.checksum != expectedChecksum) {
     DEBUG_PRINTLN("Storage: Checksum mismatch - data corrupted or first boot");
-    DEBUG_PRINT("  Outside: ");
-    DEBUG_PRINTLN(data.outsideTimestamp);
     DEBUG_PRINT("  Pee: ");
     DEBUG_PRINTLN(data.peeTimestamp);
     DEBUG_PRINT("  Poop: ");
@@ -72,13 +67,10 @@ bool Storage::load(TimerManager* timerManager) {
   }
 
   // Restore timer timestamps
-  timerManager->setTimestamp(TIMER_OUTSIDE, (time_t)data.outsideTimestamp);
   timerManager->setTimestamp(TIMER_PEE, (time_t)data.peeTimestamp);
   timerManager->setTimestamp(TIMER_POOP, (time_t)data.poopTimestamp);
 
   DEBUG_PRINTLN("Storage: Data loaded from EEPROM successfully");
-  DEBUG_PRINT("  Outside: ");
-  DEBUG_PRINTLN(data.outsideTimestamp);
   DEBUG_PRINT("  Pee: ");
   DEBUG_PRINTLN(data.peeTimestamp);
   DEBUG_PRINT("  Poop: ");

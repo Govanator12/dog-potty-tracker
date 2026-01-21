@@ -3,7 +3,6 @@
 TimerManager::TimerManager() {
   // Initialize all timers to current time
   time_t now = time(nullptr);
-  outsideStart = now;
   peeStart = now;
   poopStart = now;
 }
@@ -11,9 +10,6 @@ TimerManager::TimerManager() {
 void TimerManager::reset(Timer timer) {
   time_t now = time(nullptr);
   switch (timer) {
-    case TIMER_OUTSIDE:
-      outsideStart = now;
-      break;
     case TIMER_PEE:
       peeStart = now;
       break;
@@ -21,10 +17,6 @@ void TimerManager::reset(Timer timer) {
       poopStart = now;
       break;
   }
-}
-
-void TimerManager::resetOutside() {
-  reset(TIMER_OUTSIDE);
 }
 
 void TimerManager::resetPee() {
@@ -35,14 +27,17 @@ void TimerManager::resetPoop() {
   reset(TIMER_POOP);
 }
 
+void TimerManager::resetBoth() {
+  time_t now = time(nullptr);
+  peeStart = now;
+  poopStart = now;
+}
+
 unsigned long TimerManager::getElapsed(Timer timer) {
   time_t now = time(nullptr);
   time_t start;
 
   switch (timer) {
-    case TIMER_OUTSIDE:
-      start = outsideStart;
-      break;
     case TIMER_PEE:
       start = peeStart;
       break;
@@ -110,8 +105,6 @@ String TimerManager::getTimestampFormatted(Timer timer) {
 
 time_t TimerManager::getTimestamp(Timer timer) {
   switch (timer) {
-    case TIMER_OUTSIDE:
-      return outsideStart;
     case TIMER_PEE:
       return peeStart;
     case TIMER_POOP:
@@ -123,9 +116,6 @@ time_t TimerManager::getTimestamp(Timer timer) {
 
 void TimerManager::setTimestamp(Timer timer, time_t timestamp) {
   switch (timer) {
-    case TIMER_OUTSIDE:
-      outsideStart = timestamp;
-      break;
     case TIMER_PEE:
       peeStart = timestamp;
       break;

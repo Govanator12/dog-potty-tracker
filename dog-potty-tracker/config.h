@@ -4,7 +4,7 @@
 // Pin Definitions
 #define PIN_OLED_SCL D1
 #define PIN_OLED_SDA D2
-#define PIN_BTN_OUTSIDE D5
+#define PIN_BTN_BOTH D5   // Resets both Pee and Poop timers
 #define PIN_BTN_PEE D6
 #define PIN_BTN_POOP D7
 #define PIN_LED_GREEN D0
@@ -36,8 +36,8 @@
 #define NIGHT_MODE_END_HOUR 6     // 6 AM (24-hour format: 0-23)
 
 // Display Mode Configuration
-// Mode 0: Show elapsed time only (e.g., "OUT: 2h 15m ago")
-// Mode 1: Show timestamps only (e.g., "OUT: 1:30 PM") - requires WiFi/NTP sync
+// Mode 0: Show elapsed time only (e.g., "PEE: 2h 15m ago")
+// Mode 1: Show timestamps only (e.g., "PEE: 1:30 PM") - requires WiFi/NTP sync
 // Mode 2: Cycle between elapsed and timestamps (default)
 // Mode 3: Rotate through each timer individually with LARGE text (easier to read from distance)
 #define DISPLAY_MODE 3              // 0 = elapsed only, 1 = timestamps only, 2 = cycle, 3 = large rotating
@@ -46,7 +46,7 @@
 // Telegram Notification Configuration
 // Button press notifications (physical buttons only, not remote commands)
 // Note: Button notifications are delayed by 20 seconds to prevent blocking
-#define NOTIFY_ON_OUTSIDE false  // Notify when Outside button is pressed
+#define NOTIFY_ON_BOTH true      // Notify when Both button is pressed (resets pee and poop)
 #define NOTIFY_ON_PEE true       // Notify when Pee button is pressed
 #define NOTIFY_ON_POOP true      // Notify when Poop button is pressed
 

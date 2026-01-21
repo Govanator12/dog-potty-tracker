@@ -5,9 +5,8 @@
 #include <time.h>
 
 enum Timer {
-  TIMER_OUTSIDE = 0,
-  TIMER_PEE = 1,
-  TIMER_POOP = 2
+  TIMER_PEE = 0,
+  TIMER_POOP = 1
 };
 
 class TimerManager {
@@ -17,10 +16,10 @@ public:
   // Reset specific timer to current time
   void reset(Timer timer);
 
-  // Reset multiple timers at once
-  void resetOutside();
+  // Reset timers
   void resetPee();
   void resetPoop();
+  void resetBoth();  // Resets both Pee and Poop timers
 
   // Get elapsed time in seconds
   unsigned long getElapsed(Timer timer);
@@ -41,7 +40,6 @@ public:
   bool isTimeSynced();
 
 private:
-  time_t outsideStart;
   time_t peeStart;
   time_t poopStart;
 

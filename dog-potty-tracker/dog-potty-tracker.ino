@@ -1,8 +1,8 @@
 /*
  * Dog Potty Tracker
  *
- * A hardware device to track your dog's potty activities with three
- * independent timers (Outside, Pee, Poop) displayed on an OLED screen
+ * A hardware device to track your dog's potty activities with two
+ * independent timers (Pee, Poop) displayed on an OLED screen
  * with visual LED status indicators.
  *
  * Hardware:
@@ -99,7 +99,7 @@ void setup() {
 
   // Initialize button handler
   buttonHandler.begin();
-  buttonHandler.setCallback(BTN_OUTSIDE, onButtonShortPress);
+  buttonHandler.setCallback(BTN_BOTH, onButtonShortPress);
   buttonHandler.setCallback(BTN_PEE, onButtonShortPress);
   buttonHandler.setCallback(BTN_POOP, onButtonShortPress);
 
@@ -237,11 +237,12 @@ void onButtonShortPress(Button button) {
 
   // Process button action and queue notification if enabled
   switch (button) {
-    case BTN_OUTSIDE:
-      timerManager.resetOutside();
-      displayManager.showFeedback("Outside!", 1500);
-      if (NOTIFY_ON_OUTSIDE) {
-        queueButtonNotification("went outside");
+    case BTN_BOTH:
+      timerManager.resetBoth();
+      alertsEnabledToday = true;  // Enable alerts after first pee of the day
+      displayManager.showFeedback("Both!", 1500);
+      if (NOTIFY_ON_BOTH) {
+        queueButtonNotification("peed and pooped");
       }
       break;
 
@@ -625,14 +626,6 @@ void handleTelegramCommand(String chatId, String command) {
     commandRecognized = true;
     DEBUG_PRINTLN("Remote poop command executed");
   }
-  else if (command == "out" || command == "outside") {
-    timerManager.resetOutside();
-    displayManager.showFeedback("Outside! (Remote)", 1500);
-    saveToEEPROM();
-    response = "Outside timer reset!";
-    commandRecognized = true;
-    DEBUG_PRINTLN("Remote outside command executed");
-  }
   // Note: /status command removed - cannot send replies on ESP8266 due to SSL limitations
   // For status with replies, upgrade to Raspberry Pi Pico W (see micropython-pico-w branch)
   else if (command == "setpee" || command.startsWith("setpee ")) {
@@ -682,51 +675,26 @@ void handleTelegramCommand(String chatId, String command) {
     displayManager.showFeedback("Poop Set (Remote)", 1500);
     commandRecognized = true;
   }
-  else if (command == "setout" || command == "setoutside" || command.startsWith("setout ") || command.startsWith("setoutside ")) {
-    // Format: setout (reset to now) or setout 45 (minutes ago)
-    int minutes = 0;
-    if (command.startsWith("setout ")) {
-      minutes = command.substring(7).toInt();
-    } else if (command.startsWith("setoutside ")) {
-      minutes = command.substring(11).toInt();
-    }
-    time_t now = time(nullptr);
-    time_t targetTime = now - (minutes * 60);
-    timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
-    saveToEEPROM();
-    if (minutes > 0) {
-      response = "Outside timer set to " + String(minutes) + " minutes ago";
-      DEBUG_PRINT("Outside timer manually set to ");
-      DEBUG_PRINT(minutes);
-      DEBUG_PRINTLN(" minutes ago");
-    } else {
-      response = "Outside timer reset to now";
-      DEBUG_PRINTLN("Outside timer reset to now");
-    }
-    displayManager.showFeedback("Outside Set (Remote)", 1500);
-    commandRecognized = true;
-  }
   else if (command == "setall" || command.startsWith("setall ")) {
-    // Format: setall (reset all to now) or setall 60 (sets all timers to 60 minutes ago)
+    // Format: setall (reset all to now) or setall 60 (sets both timers to 60 minutes ago)
     int minutes = 0;
     if (command.length() > 7) {
       minutes = command.substring(7).toInt();
     }
     time_t now = time(nullptr);
     time_t targetTime = now - (minutes * 60);
-    timerManager.setTimestamp(TIMER_OUTSIDE, targetTime);
     timerManager.setTimestamp(TIMER_PEE, targetTime);
     timerManager.setTimestamp(TIMER_POOP, targetTime);
     alertsEnabledToday = true;  // Enable alerts (pee timer was reset)
     saveToEEPROM();
     if (minutes > 0) {
-      response = "All timers set to " + String(minutes) + " minutes ago";
-      DEBUG_PRINT("All timers manually set to ");
+      response = "Both timers set to " + String(minutes) + " minutes ago";
+      DEBUG_PRINT("Both timers manually set to ");
       DEBUG_PRINT(minutes);
       DEBUG_PRINTLN(" minutes ago");
     } else {
-      response = "All timers reset to now";
-      DEBUG_PRINTLN("All timers reset to now");
+      response = "Both timers reset to now";
+      DEBUG_PRINTLN("Both timers reset to now");
     }
     displayManager.showFeedback("All Set (Remote)", 1500);
     commandRecognized = true;

@@ -10,7 +10,7 @@ DisplayManager::DisplayManager() :
   displayOn(true),
   displayMode(2),  // Default to cycle mode
   cycleInterval(5000),  // Default to 5 seconds
-  currentTimer(0)  // Start with first timer (Outside)
+  currentTimer(0)  // Start with first timer (Pee)
 {
 }
 
@@ -138,10 +138,10 @@ void DisplayManager::rotateView(bool timeSynced) {
   } else if (displayMode == 3) {
     // Mode 3: Rotate through individual timers
     if (millis() - lastViewSwitch >= cycleInterval) {
-      currentTimer = (currentTimer + 1) % 3;  // Cycle through 0, 1, 2 (Outside, Pee, Poop)
+      currentTimer = (currentTimer + 1) % 2;  // Cycle through 0, 1 (Pee, Poop)
       lastViewSwitch = millis();
       DEBUG_PRINT("Timer switched to: ");
-      DEBUG_PRINTLN(currentTimer == 0 ? "OUTSIDE" : (currentTimer == 1 ? "PEE" : "POOP"));
+      DEBUG_PRINTLN(currentTimer == 0 ? "PEE" : "POOP");
     }
     return;
   }
@@ -167,22 +167,17 @@ void DisplayManager::renderElapsedView(TimerManager* timerManager) {
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
-  // Line 1: Outside timer (Yellow section - top 16px)
+  // Line 1: Pee timer (Yellow section - top 16px)
   display.setCursor(0, 0);
-  display.print("OUT: ");
-  display.print(timerManager->getElapsedFormatted(TIMER_OUTSIDE));
-
-  // Line 2: Pee timer
-  display.setCursor(0, 16);
   display.print("PEE: ");
   display.print(timerManager->getElapsedFormatted(TIMER_PEE));
 
-  // Line 3: Poop timer (Blue section - bottom 48px)
-  display.setCursor(0, 32);
+  // Line 2: Poop timer
+  display.setCursor(0, 20);
   display.print("POO: ");
   display.print(timerManager->getElapsedFormatted(TIMER_POOP));
 
-  // Line 4: Current time or status
+  // Line 3: Current time or status (Blue section - bottom 48px)
   display.setCursor(0, 48);
   display.print(getCurrentTimeString());
 
@@ -194,22 +189,17 @@ void DisplayManager::renderTimestampView(TimerManager* timerManager) {
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
-  // Line 1: Outside timestamp (Yellow section)
+  // Line 1: Pee timestamp (Yellow section)
   display.setCursor(0, 0);
-  display.print("OUT: ");
-  display.print(timerManager->getTimestampFormatted(TIMER_OUTSIDE));
-
-  // Line 2: Pee timestamp
-  display.setCursor(0, 16);
   display.print("PEE: ");
   display.print(timerManager->getTimestampFormatted(TIMER_PEE));
 
-  // Line 3: Poop timestamp (Blue section)
-  display.setCursor(0, 32);
+  // Line 2: Poop timestamp
+  display.setCursor(0, 20);
   display.print("POO: ");
   display.print(timerManager->getTimestampFormatted(TIMER_POOP));
 
-  // Line 4: Current time
+  // Line 3: Current time (Blue section)
   display.setCursor(0, 48);
   display.print(getCurrentTimeString());
 
@@ -226,20 +216,16 @@ void DisplayManager::renderSingleTimerView(TimerManager* timerManager, int timer
 
   switch(timerIndex) {
     case 0:
-      timer = TIMER_OUTSIDE;
-      label = "OUTSIDE";
-      break;
-    case 1:
       timer = TIMER_PEE;
       label = "PEE";
       break;
-    case 2:
+    case 1:
       timer = TIMER_POOP;
       label = "POOP";
       break;
     default:
-      timer = TIMER_OUTSIDE;
-      label = "OUTSIDE";
+      timer = TIMER_PEE;
+      label = "PEE";
       break;
   }
 
